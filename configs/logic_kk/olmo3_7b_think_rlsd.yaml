@@ -1,0 +1,56 @@
+method: rlsd
+model_path: allenai/Olmo-3-7B-Think
+use_lora: false
+
+learning_rate: 1e-6
+num_epochs: 30
+per_device_batch_size: 8
+group_size: 8
+ppo_mini_batch_size: 16
+max_grad_norm: 1.0
+warmup_steps: 50
+weight_decay: 0.01
+max_train_samples: 60000
+save_steps: 50
+eval_steps: 50
+logging_steps: 5
+rollout_is: token
+rollout_is_threshold: 2.0
+
+max_prompt_length: 2048
+max_completion_length: 16384
+val_max_completion_length: 38912
+actor_max_token_len_per_gpu: 40960
+temperature: 1.0
+top_p: 0.95
+top_k_sampling: 20
+student_enable_thinking: true
+val_enable_thinking: true
+val_do_sample: true
+val_n: 1
+val_temperature: 0.6
+val_top_p: 0.95
+val_top_k: 20
+val_batch_size: 16
+teacher_enable_thinking: true
+
+privileged_text_mode: solution_answer
+
+vllm_gpu_memory_utilization: 0.6
+vllm_tensor_parallel_size: 1
+
+epsilon: 0.2
+epsilon_w: 0.2
+lam: 0.5
+lam_decay_steps: 50
+teacher_sync_interval: 10
+teacher_mode: snapshot
+
+output_dir: ./outputs/logic_kk/Olmo3-7B-Think/rlsd
+data_dir: ./data
+train_dataset: kk_4to8
+val_dataset: kk_4to8_test,kk_9,kk_10,kk_11
+use_swanlab: true
+project_name: rlcsd-olmo3_7b_think-logic_kk
+experiment_name: olmo3_7b_think_rlsd
+val_before_train: true

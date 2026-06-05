@@ -1,0 +1,62 @@
+method: rlcsd
+model_path: Qwen/Qwen3-4B
+use_lora: false
+
+learning_rate: 1e-6
+num_epochs: 30
+per_device_batch_size: 8
+group_size: 8
+ppo_mini_batch_size: 16
+max_grad_norm: 1.0
+warmup_steps: 50
+weight_decay: 0.01
+max_train_samples: 60000
+save_steps: 50
+eval_steps: 50
+logging_steps: 5
+rollout_is: token
+rollout_is_threshold: 2.0
+
+max_prompt_length: 2048
+max_completion_length: 16384
+val_max_completion_length: 38912
+actor_max_token_len_per_gpu: 40960
+temperature: 1.0
+top_p: 0.95
+top_k_sampling: 20
+student_enable_thinking: true
+val_enable_thinking: true
+val_do_sample: true
+val_n: 12
+val_temperature: 0.6
+val_top_p: 0.95
+val_top_k: 20
+val_batch_size: 16
+teacher_enable_thinking: true
+
+privileged_text_mode: solution_answer
+
+vllm_gpu_memory_utilization: 0.6
+vllm_tensor_parallel_size: 1
+
+kl_loss_coef: 0
+epsilon: 0.2
+rlcsd_tau: 0.02
+rlcsd_beta: 1.0
+rlcsd_lam: 0.5
+rlcsd_delta: 0.02
+rlcsd_eta: 1.0
+rlcsd_residual_clip_low: -2.0
+rlcsd_residual_clip_high: 2.0
+rlcsd_k_max: 4
+teacher_sync_interval: 10
+teacher_mode: snapshot
+
+output_dir: ./outputs/math_deepmath/Qwen3-4B/rlcsd
+data_dir: ./data
+train_dataset: deepmath_filtered_level6_8
+val_dataset: amc23,aime24,aime25
+use_swanlab: true
+project_name: rlcsd-qwen3_4b-math_deepmath
+experiment_name: qwen3_4b_rlcsd
+val_before_train: true
