@@ -2501,33 +2501,45 @@ def _sd_group_var(values: torch.Tensor, valid_mask: torch.Tensor, mean: torch.Te
     return (centered.square() * weights).sum(dim=1) / denom
 
 
-def _sd_distribution_metrics(values: torch.Tensor, response_mask: torch.Tensor, prefix: str) -> dict[str, float]:
+def _sd_distribution_metrics(
+    values: torch.Tensor,
+    response_mask: torch.Tensor,
+    prefix: str,
+    include_percentiles: bool = True,
+) -> dict[str, float]:
     valid_mask = response_mask.bool() & torch.isfinite(values)
     valid_values = torch.masked_select(values.float(), valid_mask)
     if valid_values.numel() == 0:
-        return {
+        base = {
             f"{prefix}_mean": float("nan"),
             f"{prefix}_min": float("nan"),
-            f"{prefix}_max": float("nan"),
-            f"{prefix}_p05": float("nan"),
-            f"{prefix}_p25": float("nan"),
-            f"{prefix}_p50": float("nan"),
-            f"{prefix}_p75": float("nan"),
-            f"{prefix}_p95": float("nan")}
+            f"{prefix}_max": float("nan")}
+        if include_percentiles:
+            base.update({
+                f"{prefix}_p05": float("nan"),
+                f"{prefix}_p25": float("nan"),
+                f"{prefix}_p50": float("nan"),
+                f"{prefix}_p75": float("nan"),
+                f"{prefix}_p95": float("nan")})
+        return base
 
+    base = {
+        f"{prefix}_mean": valid_values.mean().item(),
+        f"{prefix}_min": valid_values.min().item(),
+        f"{prefix}_max": valid_values.max().item()}
+    if not include_percentiles:
+        return base
     quantiles = torch.quantile(
         valid_values,
         torch.tensor([0.05, 0.25, 0.50, 0.75, 0.95], device=valid_values.device))
     p05, p25, p50, p75, p95 = [quantile.item() for quantile in quantiles]
-    return {
-        f"{prefix}_mean": valid_values.mean().item(),
-        f"{prefix}_min": valid_values.min().item(),
-        f"{prefix}_max": valid_values.max().item(),
+    base.update({
         f"{prefix}_p05": p05,
         f"{prefix}_p25": p25,
         f"{prefix}_p50": p50,
         f"{prefix}_p75": p75,
-        f"{prefix}_p95": p95}
+        f"{prefix}_p95": p95})
+    return base
 
 
 def _sd_effective_lam(config, global_steps, default=0.5):
@@ -2879,11 +2891,8 @@ def compute_policy_loss_rlsd_ectr(old_log_prob, log_prob, advantages, response_m
         "pg_loss": loss.item(),
         "pg_clipfrac": ((ratio - 1).abs() > epsilon).float().mean().item(),
         "rlsd_ectr_lam": lam,
-        "rlsd_ectr_adv_teacher_agreement_ratio": verl_F.masked_mean(
-            ((advantages.sign() * delta_t) > 0).float(), response_mask
-        ).item(),
         "rlsd_ectr_e_ctr_abs_mean": verl_F.masked_mean(delta_t.abs(), response_mask).item()}
-    metrics.update(_sd_distribution_metrics(delta_t, response_mask, "rlsd_ectr_e_ctr"))
+    metrics.update(_sd_distribution_metrics(delta_t, response_mask, "rlsd_ectr_e_ctr", include_percentiles=False))
     metrics.update(_sd_teacher_metrics(teacher_correct_lp, log_prob, response_mask, kwargs.get("teacher_entropy")))
     return loss, metrics
 
@@ -2957,8 +2966,6 @@ def compute_policy_loss_rlcsd(old_log_prob, log_prob, advantages, response_mask,
             advantages > 0,
             raw_mod_adv.clamp_min(0.0),
             torch.where(advantages < 0, raw_mod_adv.clamp_max(0.0), torch.zeros_like(raw_mod_adv)))
-        selected_residual_adv_agreement_count = (((residual * advantages) > 0).float() * selected_float).sum()
-        selected_hat_adv_sum = (mod_adv * selected_float).sum()
         K_valid_mean = K_valid.mean()
 
     ratio_clamped = ratio.clamp(1 - epsilon, 1 + epsilon)
@@ -2986,10 +2993,8 @@ def compute_policy_loss_rlcsd(old_log_prob, log_prob, advantages, response_mask,
         "rlcsd_selected_token_count": selected_count.item(),
         "rlcsd_response_token_count": response_token_count.item(),
         "rlcsd_sample_count": sample_count.item(),
-        "rlcsd_selected_residual_adv_agreement_count": selected_residual_adv_agreement_count.item(),
-        "rlcsd_selected_hat_adv_sum": selected_hat_adv_sum.item(),
         "rlcsd_K_valid_mean": K_valid_mean.item()}
-    metrics.update(_sd_distribution_metrics(e_ctr, response_mask, "rlcsd_e_ctr"))
+    metrics.update(_sd_distribution_metrics(e_ctr, response_mask, "rlcsd_e_ctr", include_percentiles=False))
     metrics.update(_sd_distribution_metrics(residual, selected_mask, "rlcsd_selected_residual"))
     return loss, metrics
 

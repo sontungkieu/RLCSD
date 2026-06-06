@@ -25,11 +25,10 @@ import torch
 
 _IGNORE_NAN_KEY = re.compile(
     r"^rlcsd_(?:w_tilde|lambda_t|snr|e_ctr|selected_residual)_(?:p\d+|mean|min|max)$"
-    r"|^rlcsd_selected_(?:tokens_per_sample_mean|residual_adv_agreement_ratio|hat_adv_mean)$"
+    r"|^rlcsd_selected_tokens_per_sample_mean$"
 )
 _SUM_KEY = re.compile(
-    r"^rlcsd_(?:selected_token_count|response_token_count|sample_count|"
-    r"selected_residual_adv_agreement_count|selected_hat_adv_sum)$"
+    r"^rlcsd_(?:selected_token_count|response_token_count|sample_count)$"
 )
 
 _RLCSD_DERIVABLE_PREFIXES = ("rlcsd",)
@@ -87,17 +86,11 @@ def _derive_rlcsd_count_metrics_for_prefix(metrics: dict[str, Any], prefix: str)
     selected_token_count = metrics.get(f"{prefix}_selected_token_count")
     response_token_count = metrics.get(f"{prefix}_response_token_count")
     sample_count = metrics.pop(f"{prefix}_sample_count", None)
-    agreement_count = metrics.pop(f"{prefix}_selected_residual_adv_agreement_count", None)
-    hat_adv_sum = metrics.pop(f"{prefix}_selected_hat_adv_sum", None)
 
     if selected_token_count is not None and response_token_count is not None:
         metrics[f"{prefix}_selected_token_ratio"] = _safe_div(selected_token_count, response_token_count)
     if selected_token_count is not None and sample_count is not None:
         metrics[f"{prefix}_selected_tokens_per_sample_mean"] = _safe_div(selected_token_count, sample_count)
-    if selected_token_count is not None and agreement_count is not None:
-        metrics[f"{prefix}_selected_residual_adv_agreement_ratio"] = _safe_div(agreement_count, selected_token_count)
-    if selected_token_count is not None and hat_adv_sum is not None:
-        metrics[f"{prefix}_selected_hat_adv_mean"] = _safe_div(hat_adv_sum, selected_token_count)
 
 
 def _derive_rlcsd_count_metrics(metrics: dict[str, Any]) -> None:
