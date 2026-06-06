@@ -235,10 +235,21 @@ two representative methods from different families — OPSD (dense distillation)
 and RLSD (advantage modulation) — improves **every** method on nearly every
 metric.
 
-Concretely, for each method we vary only the source of the privileged signal:
-(1) **dataset CoT** (original setting), (2) **own correct rollout**, and
-(3) **own rollout + contrast** (the `*_ectr` variants in this repo). The third
-setting yields:
+Concretely, for each method we vary only the source of the privileged signal
+and hold everything else fixed:
+
+1. **Dataset CoT** — privileged context is the ground-truth solution from the
+   dataset (the original setting in each method's paper).
+2. **Own correct rollout** — privileged context is a correct rollout sampled
+   by the model itself from the same group.
+3. **Own rollout + contrast** — the contrastive construction (correct rollout
+   vs. incorrect sibling rollout). This is what `*_ectr` and `rlcsd` use.
+
+Settings (1) and (2) perform essentially the same across all three methods —
+switching the *source* of the one-sided hint barely matters. Setting (3) is
+the one that wins. Δ below is the **gain of (3) over the better of (1) and
+(2)**, averaged across benchmarks (Math = AMC23 + AIME24 + AIME25 mean@12,
+KK = 4–8 + 9 + 10 + 11 pass@1, Qwen3-4B):
 
 |  Method | Δ (Math avg) | Δ (KK avg) |
 |---------|-------------:|-----------:|
@@ -246,7 +257,7 @@ setting yields:
 | RLSD    | **+2.2**     | **+1.0**   |
 | RLCSD   | **+3.0**     | **+5.4**   |
 
-**`opsd_ectr` — OPSD with contrastive token-level signal.** Without contrast,
+**`opsd_ectr` — OPSD + contrastive token-level signal.** Without contrast,
 OPSD's actor entropy explodes in the late stage (the failure mode above);
 adding the contrastive hint keeps entropy bounded and yields a stable training
 reward.
@@ -255,12 +266,14 @@ reward.
   <img src="assets/opsd_ectr_effect.png" width="80%" alt="OPSD-ECTR mitigates entropy explosion"/>
 </p>
 
-**`rlsd_ectr` — RLSD with teacher–teacher contrastive evidence ratio.** The
-contrast also mitigates length collapse for both RLSD and RLCSD, preserving
-longer reasoning traces that benefit late-stage training.
+**`rlsd_ectr` — RLSD + contrastive evidence ratio.** The contrastive signal
+mitigates the length collapse seen in vanilla RLSD on math (left panel below).
+The right panel is an **RLCSD ablation**: removing the contrast from RLCSD
+reproduces the same length-collapse pathology, confirming that the contrastive
+construction is what keeps RLCSD's reasoning traces from shrinking.
 
 <p align="center">
-  <img src="assets/rlsd_ectr_effect.png" width="80%" alt="RLSD-ECTR preserves response length"/>
+  <img src="assets/rlsd_ectr_effect.png" width="80%" alt="Contrastive signal preserves response length for both RLSD (left) and RLCSD (right)"/>
 </p>
 
 These plug-in results are reported only on Qwen3-4B in the paper, and only
