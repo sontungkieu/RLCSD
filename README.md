@@ -1,9 +1,5 @@
 # RLCSD: Reinforcement Learning with Contrastive On-Policy Self-Distillation
 
-> Official code for *RLCSD: Reinforcement Learning with Contrastive On-Policy Self-Distillation*.
-> Leyi Pan, Shuchang Tao, Yunpeng Zhai, Lingzhe Zhang, Zhaoyang Liu, Bolin Ding, Aiwei Liu, Lijie Wen.
-> Tsinghua University · Tongyi Lab, Alibaba Group · Peking University.
-
 On-policy self-distillation (OPSD) gives reasoning models dense, token-level
 supervision by aligning a model's own distribution with the distribution it
 produces under a privileged context (typically a verified solution). We show
@@ -11,8 +7,8 @@ that this distributional gap is dominated by **style tokens** rather than
 **task-bearing tokens** — a pathology we call *privilege-induced style drift*,
 which destabilizes training and collapses response length.
 
-**RLCSD** removes this drift by contrasting the teacher–student gap under a
-correct hint against the gap under a *wrong* hint produced under an identical
+**RLCSD** removes this drift by **contrasting the teacher–student gap under a
+correct hint against the gap under a *wrong* hint** produced under an identical
 prompt template. The shared stylistic component cancels in the subtraction,
 leaving a token-level signal that is more concentrated on task-bearing tokens.
 We then integrate this signal into GRPO as a verifier-anchored modulation of
@@ -80,12 +76,6 @@ The two `_ectr` variants are **not new training methods on their own**; they
 exist to show that the contrastive principle behind RLCSD is general — see
 [Contrastive hints as a plug-in component](#contrastive-hints-as-a-plug-in-component)
 below.
-
-For RLCSD specifically:
-
-- math: `learning_rate: 1e-6` (other baselines also use 1e-6 — see App. B of the paper)
-- logic: `learning_rate: 5e-6` for RLCSD only; baselines stay at 1e-6 because they collapse at 5e-6
-- `kl_loss_coef: 0`, `teacher_mode: snapshot`, K-multi controlled by `rlcsd_k_max` (default 4)
 
 ## Repo layout
 
@@ -215,7 +205,7 @@ generalization rather than just fitting the training task difficulty.
 |             | SDPO            | 88.8  | 76.1   | 65.6   | 76.8            | 72.4   | 72.0 | 56.0  | 46.0  | 61.6            |
 |             | SRPO            | 88.3  | 75.3   | 65.6   | 76.4            | 74.8   | 72.0 | 60.0  | 49.0  | 64.0            |
 |             | RLSD            | 88.7  | 75.5   | 67.2   | 77.1            | 76.6   | 77.0 | 64.0  | 52.0  | 67.4            |
-|             | **RLCSD (ours)**| **90.8** | **77.5** | 69.7 | **79.3** (+2.7) | **81.8** | **79.0** | **70.0** | **65.0** | **74.0** (+14.4) |
+|             | **RLCSD (ours)**| **90.8** | **77.5** | **69.7** | **79.3** (+2.7) | **81.8** | **79.0** | **70.0** | **65.0** | **74.0** (+14.4) |
 
 Math is reported as **mean@12**; Knights & Knaves as **pass@1**. KK 4–8 is the
 in-distribution test set; 9 / 10 / 11 are out-of-distribution role counts.
@@ -236,10 +226,6 @@ achieving stronger final validation performance:
 
 <p align="center">
   <img src="assets/training_dynamics_qwen3_4b.png" width="95%" alt="Training dynamics on Qwen3-4B"/>
-</p>
-
-<p align="center">
-  <img src="assets/training_dynamics_overview.png" width="80%" alt="Response length over training across model scales"/>
 </p>
 
 ### Contrastive hints as a plug-in component
