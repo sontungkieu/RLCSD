@@ -1,4 +1,10 @@
+<div align="center">
+
 # RLCSD: Reinforcement Learning with Contrastive On-Policy Self-Distillation
+
+[![Paper](https://img.shields.io/badge/Paper-A42C25?style=for-the-badge&logo=arxiv&logoColor=white)](https://arxiv.org/abs/2606.11709) [![Training Dataset](https://img.shields.io/badge/HF--Models-%23FFD14D?style=for-the-badge&logo=huggingface&logoColor=black)]([https://huggingface.co/Generative-Watermark-Toolkits](https://huggingface.co/datasets/Leyiii/RLCSD))
+
+</div>
 
 On-policy self-distillation (OPSD) gives reasoning models dense, token-level
 supervision by aligning a model's own distribution with the distribution it
