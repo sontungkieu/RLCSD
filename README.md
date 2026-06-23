@@ -173,9 +173,17 @@ bash scripts/math_deepmath/run_qwen3_4b_rlcsd.sh learning_rate=2e-6 group_size=1
 
 Common environment overrides:
 
-- `SWANLAB_API_KEY` — for swanlab logging (set `use_swanlab: true` in configs)
 - `HF_ENDPOINT` — e.g. `https://hf-mirror.com` for a HuggingFace mirror
 - `CUDA_HOME` — defaults to `/usr/local/cuda-12.6`
+
+Training logs are local by default. Each run writes TensorBoard events under
+`outputs/<project>/<experiment>/<timestamp>/tensorboard_log/` and scalar JSONL
+metrics to `metrics.jsonl` in the same run directory. To inspect all local
+runs:
+
+```bash
+tensorboard --logdir outputs --host 127.0.0.1 --port 6006
+```
 
 ## Results
 

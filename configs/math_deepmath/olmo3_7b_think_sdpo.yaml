@@ -51,7 +51,7 @@ output_dir: ./outputs/math_deepmath/Olmo3-7B-Think/sdpo
 data_dir: ./data
 train_dataset: deepmath_filtered_level7_10
 val_dataset: amc23,aime24,aime25
-use_swanlab: true
+use_tensorboard: true
 project_name: rlcsd-olmo3_7b_think-math_deepmath
 experiment_name: olmo3_7b_think_sdpo
 val_before_train: true

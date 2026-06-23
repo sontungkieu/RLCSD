@@ -112,7 +112,7 @@ class VerlConfig:
     eval_steps: int = 100
     val_before_train: bool = False
     output_dir: str = "./outputs/verl_opsd_solution_answer"
-    use_swanlab: bool = True
+    use_tensorboard: bool = True
     project_name: str = "rlcsd"
     experiment_name: str = ""
     data_dir: str = "./data"
@@ -231,24 +231,22 @@ class VerlTrainer:
         self._run_dir = os.path.join(cfg.output_dir, self._run_timestamp)
 
         self.log_file = None
-        self.swanlab_run = None
+        self.tb_writer = None
         if self.is_main:
             os.makedirs(self._run_dir, exist_ok=True)
             self.log_file = open(os.path.join(self._run_dir, "train.log"), "a")
             self.log(f"Config: {vars(cfg)}")
             self.log(f"World size: {self.world_size}, Rank: {self.rank}")
 
-            if cfg.use_swanlab:
+            if cfg.use_tensorboard:
                 try:
-                    import swanlab
-                    swanlab.login(api_key=os.environ.get("SWANLAB_API_KEY", ""))
-                    self.swanlab_run = swanlab.init(
-                        project=cfg.project_name,
-                        experiment_name=cfg.experiment_name or f"{cfg.method}_{self._run_timestamp}",
-                        config=vars(cfg),
-                    )
+                    from torch.utils.tensorboard import SummaryWriter
+
+                    tensorboard_dir = os.path.join(self._run_dir, "tensorboard_log")
+                    self.tb_writer = SummaryWriter(log_dir=tensorboard_dir)
+                    self.log(f"TensorBoard log dir: {tensorboard_dir}")
                 except Exception as e:
-                    self.log(f"Warning: SwanLab init failed: {e}")
+                    self.log(f"Warning: TensorBoard init failed: {e}")
 
     def log(self, msg):
         if self.is_main:
@@ -258,9 +256,17 @@ class VerlTrainer:
                 self.log_file.flush()
 
     def log_metrics(self, metrics, step=None):
-        if self.swanlab_run:
-            import swanlab
-            swanlab.log(metrics, step=step or self.global_step)
+        if not self.tb_writer:
+            return
+        current_step = self.global_step if step is None else step
+        for key, value in metrics.items():
+            if isinstance(value, torch.Tensor):
+                if value.numel() != 1:
+                    continue
+                value = value.detach().item()
+            if isinstance(value, (int, float, bool)):
+                self.tb_writer.add_scalar(key, value, current_step)
+        self.tb_writer.flush()
 
     def _save_rollout(self, problems, answers, privileged_texts, responses, rewards, epoch, batch_idx):
         if not self.is_main:
@@ -908,9 +914,8 @@ class VerlTrainer:
         self._save_checkpoint(train_model, tokenizer, final=True)
         train_model = train_model.cpu()
 
-        if self.swanlab_run:
-            import swanlab
-            swanlab.finish()
+        if self.tb_writer:
+            self.tb_writer.close()
         dist.destroy_process_group()
 
     def _evaluate_vllm(self, llm, tokenizer, eval_data):

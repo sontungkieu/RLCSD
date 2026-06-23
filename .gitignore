@@ -8,12 +8,13 @@ __pycache__/
 data/
 outputs/
 checkpoints/
-swanlog/
-wandb/
+tensorboard_log/
 *.log
+*.zip*
 
 # Local env / tooling
 .env
+*.env
 .venv/
 .idea/
 .vscode/

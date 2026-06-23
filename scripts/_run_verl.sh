@@ -8,7 +8,6 @@ set -x
 CONFIG=${1:?Usage: $0 <config.yaml> [extra overrides...]}
 shift  # remaining args are extra hydra overrides
 
-export SWANLAB_API_KEY=${SWANLAB_API_KEY:-""}
 export CUDA_HOME=${CUDA_HOME:-"/usr/local/cuda-12.6"}
 export PATH="$CUDA_HOME/bin:$PATH"
 if [ -n "${HF_ENDPOINT}" ]; then export HF_ENDPOINT; fi
@@ -65,7 +64,7 @@ PROJECT=$(Y project_name rlcsd)
 EXPERIMENT_NAME=$(Y experiment_name ${METHOD})
 OUTPUT_DIR=$(Y output_dir "")
 VAL_BEFORE=$(Y val_before_train false)
-USE_SWANLAB=$(Y use_swanlab true)
+USE_TENSORBOARD=$(Y use_tensorboard true)
 PRIVILEGED_TEXT_MODE=$(Y privileged_text_mode solution_answer)
 # OPD (plain on-policy distillation) keys; only consumed when METHOD=opd.
 TEACHER_MODEL_PATH=$(Y teacher_model_path "")
@@ -103,7 +102,6 @@ ROPE_SCALING_FACTOR=$(Y rope_scaling_factor "")
 ROPE_SCALING_ORIGINAL_MAX_POSITION_EMBEDDINGS=$(Y rope_scaling_original_max_position_embeddings "")
 KL_LOSS_COEF=$(Y kl_loss_coef "")
 RESUME_DIR=""
-SWANLAB_RUN_ID_OVERRIDE=""
 
 NUM_DP=$((8 / TP))
 ROLLOUT_BATCH=$((BS * NUM_DP))                    # prompts per rollout
@@ -130,9 +128,9 @@ fi
 LOGPROB_MAX_SEQ_LEN=$((MAX_PROMPT + LOGPROB_MAX_RESP))
 ROLLOUT_MAX_BATCHED_TOKENS=${VAL_MAX_SEQ_LEN}
 
-USE_SWANLAB_LOWER=$(echo "$USE_SWANLAB" | tr '[:upper:]' '[:lower:]')
 USE_LORA_LOWER=$(echo "$USE_LORA" | tr '[:upper:]' '[:lower:]')
 USE_CUSTOM_REWARD_FUNCTION_LOWER=$(echo "$USE_CUSTOM_REWARD_FUNCTION" | tr '[:upper:]' '[:lower:]')
+USE_TENSORBOARD_LOWER=$(echo "$USE_TENSORBOARD" | tr '[:upper:]' '[:lower:]')
 
 case "$METHOD" in
     grpo|opd|opsd|opsd_ectr|sdpo|rlsd|rlsd_ectr|srpo|rlcsd)
@@ -158,11 +156,6 @@ if [ -z "$OUTPUT_DIR" ] || [ "$OUTPUT_DIR" = "None" ]; then
     OUTPUT_DIR="./outputs/${PROJECT}/${EXPERIMENT_NAME}"
 fi
 
-LOGGER='["console","tensorboard","file"]'
-if [ "$USE_SWANLAB_LOWER" = "true" ]; then
-    LOGGER='["console","tensorboard","file","swanlab"]'
-fi
-
 REWARD_ARGS=()
 if [ -n "$REWARD_MANAGER_NAME" ] && [ "$REWARD_MANAGER_NAME" != "None" ]; then
     REWARD_ARGS+=(reward.reward_manager.name=${REWARD_MANAGER_NAME})
@@ -174,10 +167,6 @@ if [ "$USE_CUSTOM_REWARD_FUNCTION_LOWER" = "true" ] \
         reward.custom_reward_function.path=${CUSTOM_REWARD_FUNCTION_PATH}
         reward.custom_reward_function.name=${CUSTOM_REWARD_FUNCTION_NAME}
     )
-fi
-
-if [ "$USE_SWANLAB_LOWER" = "true" ] && [ -z "${SWANLAB_API_KEY}" ]; then
-    echo "Warning: SWANLAB_API_KEY is empty; swanlab logging requires existing login state or an exported key" >&2
 fi
 
 LORA_ARGS=(
@@ -197,9 +186,6 @@ for arg in "$@"; do
     case "$arg" in
         resume_dir=*|+resume_dir=*)
             RESUME_DIR="${arg#*=}"
-            ;;
-        swanlab_run_id=*|+swanlab_run_id=*)
-            SWANLAB_RUN_ID_OVERRIDE="${arg#*=}"
             ;;
         train_dataset=*|+train_dataset=*)
             TRAIN_DATASET="${arg#*=}"
@@ -221,6 +207,10 @@ for arg in "$@"; do
             ;;
         val_enable_thinking=*|+val_enable_thinking=*)
             VAL_ENABLE_THINKING="${arg#*=}"
+            ;;
+        use_tensorboard=*|+use_tensorboard=*)
+            USE_TENSORBOARD="${arg#*=}"
+            USE_TENSORBOARD_LOWER=$(echo "$USE_TENSORBOARD" | tr '[:upper:]' '[:lower:]')
             ;;
         reward_manager_name=*|+reward_manager_name=*)
             REWARD_MANAGER_NAME="${arg#*=}"
@@ -246,6 +236,11 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+LOGGER='["console","file"]'
+if [ "$USE_TENSORBOARD_LOWER" = "true" ]; then
+    LOGGER='["console","tensorboard","file"]'
+fi
 
 PARQUET_ROOT="${DATA_ROOT%/}/verl"
 
@@ -315,50 +310,6 @@ print(os.path.abspath(sys.argv[1]))
 PY
 }
 
-discover_swanlab_run_id() {
-    python3 - "$1" "$2" <<'PY'
-import json
-import sys
-from pathlib import Path
-
-run_dir = Path(sys.argv[1]).resolve()
-experiment_name = sys.argv[2]
-
-record_path = run_dir / "swanlab_run_id.txt"
-if record_path.exists():
-    run_id = record_path.read_text(encoding="utf-8").strip()
-    if run_id:
-        print(run_id)
-        raise SystemExit(0)
-
-swanlog_root = Path("swanlog")
-if not swanlog_root.exists():
-    raise SystemExit(0)
-
-candidates = sorted(swanlog_root.glob("run-*/backup.swanlab"), key=lambda path: path.stat().st_mtime, reverse=True)
-for backup_path in candidates:
-    try:
-        with backup_path.open("r", encoding="utf-8", errors="ignore") as handle:
-            for _ in range(32):
-                line = handle.readline()
-                if not line:
-                    break
-                json_start = line.find("{")
-                if json_start < 0:
-                    continue
-                payload = json.loads(line[json_start:])
-                if payload.get("model_type") != "Experiment":
-                    continue
-                data = payload.get("data", {})
-                if data.get("name") == experiment_name and data.get("id"):
-                    print(data["id"])
-                    raise SystemExit(0)
-                break
-    except Exception:
-        continue
-PY
-}
-
 TEE_ARGS=()
 RESUME_ARGS=()
 
@@ -378,26 +329,6 @@ if [ -n "$RESUME_DIR" ] && [ "$RESUME_DIR" != "None" ]; then
     TEE_ARGS=(-a)
     RESUME_ARGS+=(trainer.resume_mode=auto)
     export VERL_FILE_LOGGER_APPEND=1
-
-    if [ "$USE_SWANLAB_LOWER" = "true" ]; then
-        export SWANLAB_RUN_ID_RECORD_FILE="${DIR}/swanlab_run_id.txt"
-        if [ -n "$SWANLAB_RUN_ID_OVERRIDE" ] && [ "$SWANLAB_RUN_ID_OVERRIDE" != "None" ]; then
-            export SWANLAB_RUN_ID="$SWANLAB_RUN_ID_OVERRIDE"
-        else
-            SWANLAB_RUN_ID_FOUND="$(discover_swanlab_run_id "$DIR" "$EXP")"
-            if [ -z "$SWANLAB_RUN_ID_FOUND" ]; then
-                echo "Failed to discover SwanLab run id for ${EXP}. Pass swanlab_run_id=<run_id>." >&2
-                exit 1
-            fi
-            export SWANLAB_RUN_ID="$SWANLAB_RUN_ID_FOUND"
-            printf '%s\n' "$SWANLAB_RUN_ID_FOUND" > "${DIR}/swanlab_run_id.txt"
-        fi
-        export SWANLAB_RESUME=must
-    else
-        unset SWANLAB_RUN_ID
-        unset SWANLAB_RESUME
-        unset SWANLAB_RUN_ID_RECORD_FILE
-    fi
 else
     TS=$(date +%Y%m%d.%H%M%S)
     EXP="${EXPERIMENT_NAME}-${TS}"
@@ -405,22 +336,18 @@ else
     mkdir -p "$DIR"
     cp "$CONFIG" "$DIR/config.yaml"
     unset VERL_FILE_LOGGER_APPEND
-    if [ "$USE_SWANLAB_LOWER" = "true" ]; then
-        unset SWANLAB_RUN_ID
-        unset SWANLAB_RESUME
-        export SWANLAB_RUN_ID_RECORD_FILE="${DIR}/swanlab_run_id.txt"
-    else
-        unset SWANLAB_RUN_ID
-        unset SWANLAB_RESUME
-        unset SWANLAB_RUN_ID_RECORD_FILE
-    fi
 fi
 
 mkdir -p "$DIR"
 if [ "$(resolve_abs_path "$CONFIG")" != "$(resolve_abs_path "$DIR/config.yaml")" ]; then
     cp "$CONFIG" "$DIR/config.yaml"
 fi
-export TENSORBOARD_DIR="${DIR}/tensorboard_log/"
+if [ "$USE_TENSORBOARD_LOWER" = "true" ]; then
+    export TENSORBOARD_DIR="${DIR}/tensorboard_log/"
+    echo "TensorBoard log dir: ${TENSORBOARD_DIR}" >&2
+else
+    unset TENSORBOARD_DIR
+fi
 export VERL_FILE_LOGGER_PATH="${DIR}/metrics.jsonl"
 
 # --- Build algorithm-specific overrides from YAML ---

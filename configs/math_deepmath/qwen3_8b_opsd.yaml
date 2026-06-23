@@ -50,7 +50,7 @@ output_dir: ./outputs/math_deepmath/Qwen3-8B/opsd
 data_dir: ./data
 train_dataset: deepmath_filtered_level7_10
 val_dataset: amc23,aime24,aime25
-use_swanlab: true
+use_tensorboard: true
 project_name: rlcsd-qwen3_8b-math_deepmath
 experiment_name: qwen3_8b_opsd
 val_before_train: true
