@@ -8,7 +8,7 @@ set -x
 CONFIG=${1:?Usage: $0 <config.yaml> [extra overrides...]}
 shift  # remaining args are extra hydra overrides
 
-export CUDA_HOME=${CUDA_HOME:-"/usr/local/cuda-12.6"}
+export CUDA_HOME=${CUDA_HOME:-"/usr/local/cuda"}
 export PATH="$CUDA_HOME/bin:$PATH"
 if [ -n "${HF_ENDPOINT}" ]; then export HF_ENDPOINT; fi
 export VLLM_WORKER_MULTIPROC_METHOD=spawn
@@ -73,6 +73,7 @@ TOP_P=$(Y top_p 0.95)
 TOP_K=$(Y top_k_sampling 20)
 GPU_MEM=$(Y vllm_gpu_memory_utilization 0.6)
 TP=$(Y vllm_tensor_parallel_size 2)
+VLLM_ATTENTION_BACKEND=$(Y vllm_attention_backend "${VLLM_ATTENTION_BACKEND:-FLASH_ATTN}")
 STUDENT_ENABLE_THINKING=$(Y student_enable_thinking false)
 VAL_ENABLE_THINKING=$(Y val_enable_thinking true)
 VAL_DO_SAMPLE=$(Y val_do_sample true)
@@ -206,6 +207,9 @@ for arg in "$@"; do
         vllm_tensor_parallel_size=*|+vllm_tensor_parallel_size=*)
             TP="${arg#*=}"
             ;;
+        vllm_attention_backend=*|+vllm_attention_backend=*)
+            VLLM_ATTENTION_BACKEND="${arg#*=}"
+            ;;
         privileged_text_mode=*|+privileged_text_mode=*)
             PRIVILEGED_TEXT_MODE="${arg#*=}"
             ;;
@@ -258,6 +262,13 @@ if [ $((N_GPUS_PER_NODE % TP)) -ne 0 ]; then
 fi
 
 NUM_DP=$((N_GPUS_PER_NODE / TP))
+
+if [ -n "$VLLM_ATTENTION_BACKEND" ] && [ "$VLLM_ATTENTION_BACKEND" != "None" ]; then
+    export VLLM_ATTENTION_BACKEND
+else
+    unset VLLM_ATTENTION_BACKEND
+fi
+
 ROLLOUT_BATCH=$((BS * NUM_DP))                    # prompts per rollout
 ROLLOUT_SAMPLES=$((ROLLOUT_BATCH * GROUP_SIZE))    # samples per rollout
 

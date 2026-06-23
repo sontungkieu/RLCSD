@@ -902,6 +902,28 @@ class vLLMReplica(RolloutReplica):
 
         # create server actor in each node with node affinity and cuda visible devices
         nnodes, gpus_per_replica_node = self.nnodes, self.gpus_per_replica_node
+        server_env_vars = {
+            "RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES": "1",
+            "RAY_EXPERIMENTAL_NOSET_ASCEND_RT_VISIBLE_DEVICES": "1",
+            # To prevent hanging or crash during synchronization of weights between actor and rollout
+            # in disaggregated mode. See:
+            # https://docs.vllm.ai/en/latest/usage/troubleshooting.html?h=nccl_cumem_enable#known-issues
+            # https://github.com/vllm-project/vllm/blob/c6b0a7d3ba03ca414be1174e9bd86a97191b7090/vllm/worker/worker_base.py#L445
+            "NCCL_CUMEM_ENABLE": "0",
+        }
+        for env_key in (
+            "VLLM_ATTENTION_BACKEND",
+            "CUDA_HOME",
+            "CUDA_PATH",
+            "PATH",
+            "CPATH",
+            "LIBRARY_PATH",
+            "LD_LIBRARY_PATH",
+        ):
+            env_value = os.environ.get(env_key)
+            if env_value:
+                server_env_vars[env_key] = env_value
+
         for node_rank in range(nnodes):
             workers = self.workers[node_rank * gpus_per_replica_node : (node_rank + 1) * gpus_per_replica_node]
             node_cuda_visible_devices = ",".join(
@@ -921,15 +943,7 @@ class vLLMReplica(RolloutReplica):
                     soft=False,
                 ),
                 runtime_env={
-                    "env_vars": {
-                        "RAY_EXPERIMENTAL_NOSET_CUDA_VISIBLE_DEVICES": "1",
-                        "RAY_EXPERIMENTAL_NOSET_ASCEND_RT_VISIBLE_DEVICES": "1",
-                        # To prevent hanging or crash during synchronization of weights between actor and rollout
-                        # in disaggregated mode. See:
-                        # https://docs.vllm.ai/en/latest/usage/troubleshooting.html?h=nccl_cumem_enable#known-issues
-                        # https://github.com/vllm-project/vllm/blob/c6b0a7d3ba03ca414be1174e9bd86a97191b7090/vllm/worker/worker_base.py#L445
-                        "NCCL_CUMEM_ENABLE": "0",
-                    }
+                    "env_vars": server_env_vars
                 },
                 name=name,
                 max_concurrency=self.max_concurrency,
