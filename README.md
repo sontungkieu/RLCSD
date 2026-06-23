@@ -171,6 +171,10 @@ override individual hyperparameters, append Hydra-style overrides:
 bash scripts/math_deepmath/run_qwen3_4b_rlcsd.sh learning_rate=2e-6 group_size=16
 ```
 
+The launcher auto-detects `n_gpus_per_node` from the runtime environment when
+the config omits it, and uses it with `vllm_tensor_parallel_size` to size rollout
+batches. Override it explicitly on constrained nodes, e.g. `n_gpus_per_node=2`.
+
 Common environment overrides:
 
 - `HF_ENDPOINT` — e.g. `https://hf-mirror.com` for a HuggingFace mirror

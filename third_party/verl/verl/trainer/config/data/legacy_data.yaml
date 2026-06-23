@@ -1,0 +1,113 @@
+# Tokenizer path. If null, verl falls back to the actor model tokenizer.
+tokenizer: null
+
+# Whether to use shared memory for dataset loading.
+use_shm: false
+
+# Training parquet files.
+train_files: ~/data/rlhf/gsm8k/train.parquet
+
+# Validation parquet files.
+val_files: ~/data/rlhf/gsm8k/test.parquet
+
+# Maximum number of training samples to load. Negative means all samples.
+train_max_samples: -1
+
+# Maximum number of validation samples to load. Negative means all samples.
+val_max_samples: -1
+
+# Dataset column containing the prompt.
+prompt_key: prompt
+
+# Dataset column containing reward function metadata.
+reward_fn_key: data_source
+
+# Maximum prompt token length.
+max_prompt_length: 512
+
+# Maximum generated response token length.
+max_response_length: 512
+
+# Training batch size before rollout expansion.
+train_batch_size: 1024
+
+# Validation batch size. If null, verl chooses a default.
+val_batch_size: null
+
+# Tool config path for multi-turn rollout, inherited from rollout config when set.
+tool_config_path: ${oc.select:actor_rollout_ref.rollout.multi_turn.tool_config_path,null}
+
+# Whether to return raw input ids from the dataset.
+return_raw_input_ids: false
+
+# Whether to return raw chat messages from the dataset.
+return_raw_chat: true
+
+# Whether to return the full prompt text.
+return_full_prompt: false
+
+# Whether to shuffle training data.
+shuffle: true
+
+# Random seed for data loading. Null keeps the framework default.
+seed: null
+
+# Number of dataloader worker processes.
+dataloader_num_workers: 8
+
+# Image patch size for multimodal inputs.
+image_patch_size: 14
+
+# Whether to shuffle validation data.
+validation_shuffle: false
+
+# Whether to filter prompts that exceed max_prompt_length.
+filter_overlong_prompts: false
+
+# Worker count for overlong prompt filtering.
+filter_overlong_prompts_workers: 1
+
+# Truncation policy for overlong inputs.
+truncation: error
+
+# Dataset column containing images.
+image_key: images
+
+# Dataset column containing videos.
+video_key: videos
+
+# Whether to trust remote code when loading tokenizers/processors.
+trust_remote_code: false
+
+# Optional custom dataset class.
+custom_cls:
+
+  # Python file path for the custom dataset class.
+  path: null
+
+  # Class name for the custom dataset class.
+  name: null
+
+# Whether to return multimodal model inputs.
+return_multi_modal_inputs: true
+
+# Optional sampler class.
+sampler:
+
+  # Python module or file path for the sampler class.
+  class_path: null
+
+  # Sampler class name.
+  class_name: null
+
+# Optional data generation hook.
+datagen:
+
+  # Python module or file path for the data generation hook.
+  path: null
+
+  # Data generation hook function or class name.
+  name: null
+
+# Extra keyword arguments for tokenizer.apply_chat_template.
+apply_chat_template_kwargs: {}

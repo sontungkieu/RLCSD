@@ -1,5 +1,5 @@
 method: grpo
-model_path: Qwen/Qwen3-4B
+model_path: /workspace/storage-shared/models/Qwen3-4B
 use_lora: false
 
 learning_rate: 1e-6

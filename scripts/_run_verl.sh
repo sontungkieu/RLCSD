@@ -26,6 +26,29 @@ export PYTHONPATH="$(pwd)/third_party/verl:$(pwd):${PYTHONPATH}"
 # --- Read YAML helper ---
 Y() { python3 -c "import yaml; c=yaml.safe_load(open('$CONFIG')); print(c.get('$1','${2:-}'))"; }
 
+detect_n_gpus_per_node() {
+    if [ -n "${CUDA_VISIBLE_DEVICES:-}" ] && [ "${CUDA_VISIBLE_DEVICES}" != "NoDevFiles" ]; then
+        python3 - "$CUDA_VISIBLE_DEVICES" <<'PY'
+import sys
+
+visible = [part for part in sys.argv[1].split(",") if part.strip()]
+print(len(visible))
+PY
+        return
+    fi
+    if command -v nvidia-smi >/dev/null 2>&1; then
+        nvidia-smi -L 2>/dev/null | wc -l | tr -d ' '
+        return
+    fi
+    python3 - <<'PY' 2>/dev/null || true
+try:
+    import torch
+    print(torch.cuda.device_count())
+except Exception:
+    print("")
+PY
+}
+
 METHOD=$(Y method grpo)
 MODEL_PATH=$(Y model_path Qwen/Qwen3-1.7B)
 USE_LORA=$(Y use_lora true)
@@ -70,7 +93,7 @@ PRIVILEGED_TEXT_MODE=$(Y privileged_text_mode solution_answer)
 TEACHER_MODEL_PATH=$(Y teacher_model_path "")
 TEACHER_ENABLE_RESOURCE_POOL=$(Y teacher_enable_resource_pool false)
 TEACHER_N_GPUS_PER_NODE=$(Y teacher_n_gpus_per_node 0)
-N_GPUS_PER_NODE=$(Y n_gpus_per_node 8)
+N_GPUS_PER_NODE=$(Y n_gpus_per_node "")
 TEACHER_TP_SIZE=$(Y teacher_tp_size 1)
 TEACHER_GPU_MEM=$(Y teacher_gpu_memory_utilization 0.3)
 DISTILL_LOSS_MODE=$(Y distillation_loss_mode k1)
@@ -102,31 +125,6 @@ ROPE_SCALING_FACTOR=$(Y rope_scaling_factor "")
 ROPE_SCALING_ORIGINAL_MAX_POSITION_EMBEDDINGS=$(Y rope_scaling_original_max_position_embeddings "")
 KL_LOSS_COEF=$(Y kl_loss_coef "")
 RESUME_DIR=""
-
-NUM_DP=$((8 / TP))
-ROLLOUT_BATCH=$((BS * NUM_DP))                    # prompts per rollout
-ROLLOUT_SAMPLES=$((ROLLOUT_BATCH * GROUP_SIZE))    # samples per rollout
-
-# ppo_mini_batch_size: how many samples per optimizer step.
-# Default = rollout_samples (one update per rollout).
-# Set smaller in yaml to get multiple updates per rollout.
-PPO_MINI_BS=$(Y ppo_mini_batch_size ${ROLLOUT_BATCH})
-# These token budgets are for full sequence length, so they must include prompt + response.
-TRAIN_MAX_SEQ_LEN=$((MAX_PROMPT + MAX_RESP))
-VAL_MAX_SEQ_LEN=$((MAX_PROMPT + VAL_MAX_RESP))
-ROLLOUT_MAX_MODEL_LEN=${TRAIN_MAX_SEQ_LEN}
-if [ "${VAL_MAX_SEQ_LEN}" -gt "${ROLLOUT_MAX_MODEL_LEN}" ]; then
-    ROLLOUT_MAX_MODEL_LEN=${VAL_MAX_SEQ_LEN}
-fi
-if [ -z "${ACTOR_MAX_TOKEN_LEN}" ] || [ "${ACTOR_MAX_TOKEN_LEN}" = "None" ]; then
-    ACTOR_MAX_TOKEN_LEN=${TRAIN_MAX_SEQ_LEN}
-fi
-LOGPROB_MAX_RESP=${MAX_RESP}
-if [ "${VAL_MAX_RESP}" -gt "${LOGPROB_MAX_RESP}" ]; then
-    LOGPROB_MAX_RESP=${VAL_MAX_RESP}
-fi
-LOGPROB_MAX_SEQ_LEN=$((MAX_PROMPT + LOGPROB_MAX_RESP))
-ROLLOUT_MAX_BATCHED_TOKENS=${VAL_MAX_SEQ_LEN}
 
 USE_LORA_LOWER=$(echo "$USE_LORA" | tr '[:upper:]' '[:lower:]')
 USE_CUSTOM_REWARD_FUNCTION_LOWER=$(echo "$USE_CUSTOM_REWARD_FUNCTION" | tr '[:upper:]' '[:lower:]')
@@ -202,6 +200,12 @@ for arg in "$@"; do
         val_files=*|+val_files=*)
             VAL_FILES="${arg#*=}"
             ;;
+        n_gpus_per_node=*|+n_gpus_per_node=*)
+            N_GPUS_PER_NODE="${arg#*=}"
+            ;;
+        vllm_tensor_parallel_size=*|+vllm_tensor_parallel_size=*)
+            TP="${arg#*=}"
+            ;;
         privileged_text_mode=*|+privileged_text_mode=*)
             PRIVILEGED_TEXT_MODE="${arg#*=}"
             ;;
@@ -236,6 +240,47 @@ for arg in "$@"; do
             ;;
     esac
 done
+
+if [ -z "${N_GPUS_PER_NODE}" ] || [ "${N_GPUS_PER_NODE}" = "None" ]; then
+    N_GPUS_PER_NODE="$(detect_n_gpus_per_node)"
+fi
+if [ -z "${N_GPUS_PER_NODE}" ] || [ "${N_GPUS_PER_NODE}" = "0" ]; then
+    N_GPUS_PER_NODE=8
+    echo "Warning: could not detect GPU count; defaulting n_gpus_per_node=${N_GPUS_PER_NODE}" >&2
+fi
+if [ "$TP" -gt "$N_GPUS_PER_NODE" ]; then
+    echo "vllm_tensor_parallel_size (${TP}) cannot exceed n_gpus_per_node (${N_GPUS_PER_NODE})" >&2
+    exit 1
+fi
+if [ $((N_GPUS_PER_NODE % TP)) -ne 0 ]; then
+    echo "n_gpus_per_node (${N_GPUS_PER_NODE}) must be divisible by vllm_tensor_parallel_size (${TP})" >&2
+    exit 1
+fi
+
+NUM_DP=$((N_GPUS_PER_NODE / TP))
+ROLLOUT_BATCH=$((BS * NUM_DP))                    # prompts per rollout
+ROLLOUT_SAMPLES=$((ROLLOUT_BATCH * GROUP_SIZE))    # samples per rollout
+
+# ppo_mini_batch_size: how many samples per optimizer step.
+# Default = rollout_samples (one update per rollout).
+# Set smaller in yaml to get multiple updates per rollout.
+PPO_MINI_BS=$(Y ppo_mini_batch_size ${ROLLOUT_BATCH})
+# These token budgets are for full sequence length, so they must include prompt + response.
+TRAIN_MAX_SEQ_LEN=$((MAX_PROMPT + MAX_RESP))
+VAL_MAX_SEQ_LEN=$((MAX_PROMPT + VAL_MAX_RESP))
+ROLLOUT_MAX_MODEL_LEN=${TRAIN_MAX_SEQ_LEN}
+if [ "${VAL_MAX_SEQ_LEN}" -gt "${ROLLOUT_MAX_MODEL_LEN}" ]; then
+    ROLLOUT_MAX_MODEL_LEN=${VAL_MAX_SEQ_LEN}
+fi
+if [ -z "${ACTOR_MAX_TOKEN_LEN}" ] || [ "${ACTOR_MAX_TOKEN_LEN}" = "None" ]; then
+    ACTOR_MAX_TOKEN_LEN=${TRAIN_MAX_SEQ_LEN}
+fi
+LOGPROB_MAX_RESP=${MAX_RESP}
+if [ "${VAL_MAX_RESP}" -gt "${LOGPROB_MAX_RESP}" ]; then
+    LOGPROB_MAX_RESP=${VAL_MAX_RESP}
+fi
+LOGPROB_MAX_SEQ_LEN=$((MAX_PROMPT + LOGPROB_MAX_RESP))
+ROLLOUT_MAX_BATCHED_TOKENS=${VAL_MAX_SEQ_LEN}
 
 LOGGER='["console","file"]'
 if [ "$USE_TENSORBOARD_LOWER" = "true" ]; then
