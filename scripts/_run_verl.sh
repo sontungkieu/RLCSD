@@ -22,23 +22,41 @@ export TORCH_NCCL_TRACE_BUFFER_SIZE=${TORCH_NCCL_TRACE_BUFFER_SIZE:-20000}
 
 cd "$(dirname "$0")/.."
 export PYTHONPATH="$(pwd)/third_party/verl:$(pwd):${PYTHONPATH}"
-NVIDIA_SITE_LIBS=$(python3 - <<'PY'
+readarray -t NVIDIA_SITE_PATHS < <(python3 - <<'PY'
 import site
 from pathlib import Path
 
-paths = []
+libs = []
+includes = []
+seen_libs = set()
+seen_includes = set()
 for site_dir in site.getsitepackages():
     nvidia_dir = Path(site_dir) / "nvidia"
     if not nvidia_dir.is_dir():
         continue
-    for lib_dir in nvidia_dir.glob("*/lib"):
-        if lib_dir.is_dir():
-            paths.append(str(lib_dir))
-print(":".join(paths))
+    for package_dir in sorted(nvidia_dir.iterdir()):
+        lib_dir = package_dir / "lib"
+        include_dir = package_dir / "include"
+        if lib_dir.is_dir() and lib_dir not in seen_libs:
+            libs.append(str(lib_dir))
+            seen_libs.add(lib_dir)
+        if include_dir.is_dir() and include_dir not in seen_includes:
+            includes.append(str(include_dir))
+            seen_includes.add(include_dir)
+print(":".join(libs))
+print(":".join(includes))
 PY
 )
+NVIDIA_SITE_LIBS="${NVIDIA_SITE_PATHS[0]:-}"
+NVIDIA_SITE_INCLUDES="${NVIDIA_SITE_PATHS[1]:-}"
 if [ -n "${NVIDIA_SITE_LIBS}" ]; then
     export LD_LIBRARY_PATH="${NVIDIA_SITE_LIBS}:${LD_LIBRARY_PATH:-}"
+    export LIBRARY_PATH="${NVIDIA_SITE_LIBS}:${LIBRARY_PATH:-}"
+fi
+if [ -n "${NVIDIA_SITE_INCLUDES}" ]; then
+    export CPATH="${NVIDIA_SITE_INCLUDES}:${CPATH:-}"
+    export C_INCLUDE_PATH="${NVIDIA_SITE_INCLUDES}:${C_INCLUDE_PATH:-}"
+    export CPLUS_INCLUDE_PATH="${NVIDIA_SITE_INCLUDES}:${CPLUS_INCLUDE_PATH:-}"
 fi
 
 # --- Read YAML helper ---
