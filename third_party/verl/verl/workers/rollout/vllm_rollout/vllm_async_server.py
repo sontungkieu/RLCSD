@@ -346,7 +346,11 @@ class vLLMHttpServer:
         if self.config.enable_rollout_routing_replay:
             args.update({"enable_return_routed_experts": True})
 
-        server_args = ["serve", self.model_config.local_path] + build_cli_args_from_config(args)
+        server_args = ["serve", self.model_config.local_path]
+        attention_backend = os.environ.get("VLLM_ATTENTION_BACKEND")
+        if attention_backend and attention_backend != "None":
+            server_args.extend(["--attention-backend", attention_backend])
+        server_args += build_cli_args_from_config(args)
 
         if self.replica_rank == 0:
             pprint(server_args)

@@ -181,9 +181,11 @@ Common environment overrides:
 
 - `HF_ENDPOINT` — e.g. `https://hf-mirror.com` for a HuggingFace mirror
 - `CUDA_HOME` — defaults to `/usr/local/cuda`
-- `VLLM_ATTENTION_BACKEND` — defaults to `FLASH_ATTN` to avoid vLLM
-  auto-selecting FlashInfer on Blackwell GPUs; set `vllm_attention_backend=None`
-  on the launcher command line to let vLLM choose automatically.
+- `VLLM_ATTENTION_BACKEND` — defaults to `FLASH_ATTN`. The launcher also passes
+  this value to `vllm serve --attention-backend` inside the Ray server actor, so
+  vLLM fails fast if the requested backend is unsupported instead of silently
+  falling through to FlashInfer JIT. Set `vllm_attention_backend=None` on the
+  launcher command line to let vLLM choose automatically.
 
 Training logs are local by default. Each run writes TensorBoard events under
 `outputs/<project>/<experiment>/<timestamp>/tensorboard_log/` and scalar JSONL
