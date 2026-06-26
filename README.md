@@ -109,21 +109,21 @@ requirements.txt
 ## Install
 
 ```bash
-# Recommended: a fresh Python 3.10–3.12 env
-pip install -r requirements.txt
+# Recommended on the restricted CUDA 13.0 environment
+uv sync
 ```
 
 A few practical notes:
 
-- `requirements.txt` pins `torch>=2.5.0,<2.10` to keep a CUDA 12 toolchain.
-  torch 2.10+ defaults to CUDA 13 wheels which require a newer NVIDIA driver
-  than CUDA 12.x systems ship. For an explicit CUDA match install from the
-  PyTorch index:
-  ```bash
-  pip install "torch>=2.5.0,<2.10" --index-url https://download.pytorch.org/whl/cu126
-  ```
+- `pyproject.toml` pins the main CUDA 13.0 environment through the internal
+  package indexes at `10.30.154.118:8888`.
+- `torch`, `torchvision`, `torchaudio`, and `vllm` are pinned directly in
+  `pyproject.toml`; the internal pool must contain wheels compatible with the
+  target CUDA stack.
+- `requirements.txt` is kept as a legacy pip fallback for older environments.
 - `flash-attn` builds against the installed torch — use
-  `pip install flash-attn --no-build-isolation` if pip's build env can't find torch.
+  `uv sync --extra flash-attn` only when the internal pool has a matching wheel
+  or the node has the CUDA build toolchain available.
 - `third_party/verl/` is added to `PYTHONPATH` automatically by `_run_verl.sh`.
 
 ## Data
