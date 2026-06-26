@@ -22,6 +22,24 @@ export TORCH_NCCL_TRACE_BUFFER_SIZE=${TORCH_NCCL_TRACE_BUFFER_SIZE:-20000}
 
 cd "$(dirname "$0")/.."
 export PYTHONPATH="$(pwd)/third_party/verl:$(pwd):${PYTHONPATH}"
+NVIDIA_SITE_LIBS=$(python3 - <<'PY'
+import site
+from pathlib import Path
+
+paths = []
+for site_dir in site.getsitepackages():
+    nvidia_dir = Path(site_dir) / "nvidia"
+    if not nvidia_dir.is_dir():
+        continue
+    for lib_dir in nvidia_dir.glob("*/lib"):
+        if lib_dir.is_dir():
+            paths.append(str(lib_dir))
+print(":".join(paths))
+PY
+)
+if [ -n "${NVIDIA_SITE_LIBS}" ]; then
+    export LD_LIBRARY_PATH="${NVIDIA_SITE_LIBS}:${LD_LIBRARY_PATH:-}"
+fi
 
 # --- Read YAML helper ---
 Y() { python3 -c "import yaml; c=yaml.safe_load(open('$CONFIG')); print(c.get('$1','${2:-}'))"; }

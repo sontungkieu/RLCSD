@@ -115,15 +115,17 @@ uv sync
 
 A few practical notes:
 
-- `pyproject.toml` pins the main CUDA 13.0 environment through the internal
-  package indexes at `10.30.154.118:8888`.
-- `torch`, `torchvision`, `torchaudio`, and `vllm` are pinned directly in
-  `pyproject.toml`; the internal pool must contain wheels compatible with the
-  target CUDA stack.
+- `pyproject.toml` pins the main environment through the internal package
+  indexes at `10.30.154.118:8888`, using the newer torch/vLLM stack available
+  from that pool.
+- `flash-attn` is not part of the default sync because matching wheels are
+  ABI-sensitive and source builds are slow. Use `uv sync --extra flash-attn`
+  only when the internal pool has a matching wheel or the node has the CUDA
+  build toolchain available.
+- If `flash-attn` is unavailable for the Transformers/FSDP model path, run with
+  `+actor_rollout_ref.model.override_config.attn_implementation=sdpa` and
+  `actor_rollout_ref.model.use_remove_padding=False`.
 - `requirements.txt` is kept as a legacy pip fallback for older environments.
-- `flash-attn` builds against the installed torch — use
-  `uv sync --extra flash-attn` only when the internal pool has a matching wheel
-  or the node has the CUDA build toolchain available.
 - `third_party/verl/` is added to `PYTHONPATH` automatically by `_run_verl.sh`.
 
 ## Data
