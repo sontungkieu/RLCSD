@@ -108,18 +108,12 @@ requirements.txt
 
 ## Install
 
-```bash
-# Recommended on the restricted CUDA 13.0 environment
-uv sync
-```
-
 A few practical notes:
 
-- `pyproject.toml` pins the main environment through the internal package
-  indexes at `10.30.154.118:8888`, using the newer torch/vLLM stack available
-  from that pool.
-- `flash-attn` is not part of the default sync because matching wheels are
-  ABI-sensitive and source builds are slow. Use `uv sync --extra flash-attn`
+- This repo no longer pins the CUDA environment through `pyproject.toml` or
+  `uv.lock`. Build the runtime environment on the target machine from the
+  internal package indexes that are available there.
+- `flash-attn` wheels are ABI-sensitive and source builds are slow. Install it
   only when the internal pool has a matching wheel or the node has the CUDA
   build toolchain available.
 - If `flash-attn` is unavailable for the Transformers/FSDP model path, run with
