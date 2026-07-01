@@ -16,6 +16,8 @@ tensorboard_log/
 .env
 *.env
 .venv/
+.agents/
+skills-lock.json
 .idea/
 .vscode/
 
