@@ -32,6 +32,7 @@ math-verify>=0.7.0
 pyyaml
 tqdm
 numpy
+psutil
 
 # Data download
 huggingface_hub>=0.20.0

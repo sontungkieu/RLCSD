@@ -21,6 +21,7 @@ This trainer supports model-agonistic model initialization with huggingface
 import json
 import os
 import sys
+import time
 import uuid
 from collections import defaultdict
 from copy import deepcopy
@@ -72,6 +73,11 @@ from verl.utils.torch_functional import masked_mean
 from verl.utils.tracking import ValidationGenerationsLogger
 from verl.workers.config import DistillationConfig, EngineConfig
 from verl.workers.utils.padding import left_right_2_no_padding, no_padding_2_padding
+
+try:
+    import psutil
+except ImportError:  # pragma: no cover - diagnostics degrade cleanly when psutil is absent
+    psutil = None
 
 
 def apply_kl_penalty(data: DataProto, kl_ctrl: core_algos.AdaptiveKLController, kl_penalty="kl"):
@@ -319,6 +325,10 @@ class RayPPOTrainer:
         self._create_dataloader(train_dataset, val_dataset, collate_fn, train_sampler)
 
         self.checkpoint_manager = None
+        self._current_diagnostics_detailed = False
+        self._diagnostics_process = None
+        self._diagnostics_last_disk_io = None
+        self._diagnostics_last_disk_io_time = None
 
     def _create_dataloader(self, train_dataset, val_dataset, collate_fn, train_sampler: Optional[Sampler]):
         """
@@ -1427,7 +1437,144 @@ class RayPPOTrainer:
             old_log_prob_mfu = 0
         return old_log_prob, old_log_prob_mfu
 
+    def _diagnostics_config(self):
+        return OmegaConf.select(self.config, "diagnostics") or {}
+
+    def _diagnostics_enabled(self) -> bool:
+        return bool(self._diagnostics_config().get("enabled", True))
+
+    def _should_log_detailed_diagnostics(self) -> bool:
+        if not self._diagnostics_enabled():
+            return False
+        cfg = self._diagnostics_config()
+        step = int(getattr(self, "global_steps", 0) or 0)
+        first_n = int(cfg.get("detailed_first_n_steps", 10) or 0)
+        every_n = int(cfg.get("detailed_every_n_steps", 10) or 0)
+        return (first_n > 0 and step <= first_n) or (every_n > 0 and step % every_n == 0)
+
+    def _init_system_diagnostics(self):
+        if psutil is None or not self._diagnostics_enabled():
+            return
+        self._diagnostics_process = psutil.Process(os.getpid())
+        psutil.cpu_percent(interval=None)
+        self._diagnostics_process.cpu_percent(interval=None)
+        self._diagnostics_last_disk_io = psutil.disk_io_counters()
+        self._diagnostics_last_disk_io_time = time.perf_counter()
+
+    def _collect_disk_io_diagnostics(self, metrics: dict[str, float]):
+        counters = psutil.disk_io_counters()
+        now = time.perf_counter()
+        if counters is None:
+            return
+        if self._diagnostics_last_disk_io is not None and self._diagnostics_last_disk_io_time is not None:
+            elapsed = max(now - self._diagnostics_last_disk_io_time, 1e-6)
+            metrics["sys/disk_read_mb_s"] = (
+                counters.read_bytes - self._diagnostics_last_disk_io.read_bytes
+            ) / elapsed / (1024**2)
+            metrics["sys/disk_write_mb_s"] = (
+                counters.write_bytes - self._diagnostics_last_disk_io.write_bytes
+            ) / elapsed / (1024**2)
+        self._diagnostics_last_disk_io = counters
+        self._diagnostics_last_disk_io_time = now
+
+    def _collect_ray_resource_diagnostics(self, metrics: dict[str, float]):
+        try:
+            import ray
+        except ImportError:
+            metrics["diagnostics/ray_metrics_available"] = 0.0
+            return
+        if not ray.is_initialized():
+            metrics["diagnostics/ray_metrics_available"] = 0.0
+            return
+        try:
+            cluster = ray.cluster_resources()
+            available = ray.available_resources()
+        except Exception:
+            metrics["diagnostics/ray_metrics_available"] = 0.0
+            return
+        metrics["diagnostics/ray_metrics_available"] = 1.0
+        for resource in ("CPU", "GPU"):
+            total = float(cluster.get(resource, 0.0))
+            free = float(available.get(resource, 0.0))
+            prefix = resource.lower()
+            metrics[f"ray/{prefix}_total"] = total
+            metrics[f"ray/{prefix}_available"] = free
+            metrics[f"ray/{prefix}_used"] = max(total - free, 0.0)
+        gib = 1024**3
+        for resource in ("memory", "object_store_memory"):
+            total = cluster.get(resource)
+            if total is None:
+                continue
+            free = float(available.get(resource, 0.0))
+            total = float(total)
+            prefix = "ray/object_store_memory" if resource == "object_store_memory" else "ray/memory"
+            metrics[f"{prefix}_total_gb"] = total / gib
+            metrics[f"{prefix}_available_gb"] = free / gib
+            metrics[f"{prefix}_used_gb"] = max(total - free, 0.0) / gib
+
+    def _collect_system_diagnostics(self, detailed: bool) -> dict[str, float]:
+        metrics = {
+            "diagnostics/enabled": 1.0 if self._diagnostics_enabled() else 0.0,
+            "diagnostics/detailed_step": 1.0 if detailed else 0.0,
+        }
+        if not self._diagnostics_enabled():
+            return metrics
+        cfg = self._diagnostics_config()
+        if not bool(cfg.get("system_metrics", True)):
+            metrics["diagnostics/system_metrics_available"] = 0.0
+            return metrics
+        if psutil is None:
+            metrics["diagnostics/system_metrics_available"] = 0.0
+            return metrics
+
+        metrics["diagnostics/system_metrics_available"] = 1.0
+        if self._diagnostics_process is None:
+            self._init_system_diagnostics()
+
+        ram = psutil.virtual_memory()
+        swap = psutil.swap_memory()
+        metrics["sys/cpu_percent"] = psutil.cpu_percent(interval=None)
+        metrics["sys/ram_used_gb"] = ram.used / (1024**3)
+        metrics["sys/ram_available_gb"] = ram.available / (1024**3)
+        metrics["sys/ram_percent"] = ram.percent
+        metrics["sys/swap_used_gb"] = swap.used / (1024**3)
+        metrics["sys/swap_percent"] = swap.percent
+
+        if hasattr(os, "getloadavg"):
+            load1, load5, load15 = os.getloadavg()
+            metrics["sys/load_avg_1m"] = load1
+            metrics["sys/load_avg_5m"] = load5
+            metrics["sys/load_avg_15m"] = load15
+
+        process = self._diagnostics_process
+        if process is not None:
+            try:
+                proc_mem = process.memory_info()
+                metrics["proc/rss_gb"] = proc_mem.rss / (1024**3)
+                metrics["proc/vms_gb"] = proc_mem.vms / (1024**3)
+                metrics["proc/cpu_percent"] = process.cpu_percent(interval=None)
+                metrics["proc/num_threads"] = process.num_threads()
+                num_fds = getattr(process, "num_fds", None)
+                if num_fds is not None:
+                    metrics["proc/num_fds"] = num_fds()
+            except (psutil.Error, OSError):
+                pass
+
+        if detailed:
+            metrics["sys/cpu_count_logical"] = psutil.cpu_count(logical=True) or 0
+            metrics["sys/cpu_count_physical"] = psutil.cpu_count(logical=False) or 0
+            if bool(cfg.get("disk_io", True)):
+                self._collect_disk_io_diagnostics(metrics)
+            if bool(cfg.get("ray_resources", True)):
+                self._collect_ray_resource_diagnostics(metrics)
+
+        return metrics
+
     def _update_actor(self, batch: DataProto) -> DataProto:
+        diagnostics_detailed = bool(
+            getattr(self, "_current_diagnostics_detailed", self._should_log_detailed_diagnostics())
+        )
+        batch.meta_info["diagnostics_detailed"] = diagnostics_detailed
         rollout_config = self.config.actor_rollout_ref.rollout
         batch.meta_info["multi_turn"] = rollout_config.multi_turn.enable
         # TODO: Make "temperature" single source of truth from generation.
@@ -1548,6 +1695,7 @@ class RayPPOTrainer:
         self.global_steps += 1
         last_val_metrics = None
         self.max_steps_duration = 0
+        self._init_system_diagnostics()
 
         prev_step_profile = False
         curr_step_profile = (
@@ -1563,6 +1711,8 @@ class RayPPOTrainer:
                     self.actor_rollout_wg.async_calls_finalize_fn_exec(blocking=False)
                 metrics = {}
                 timing_raw = {}
+                diagnostics_detailed = self._should_log_detailed_diagnostics()
+                self._current_diagnostics_detailed = diagnostics_detailed
 
                 with marked_timer("start_profile", timing_raw):
                     self._start_profiling(
@@ -1936,6 +2086,7 @@ class RayPPOTrainer:
                 # compute variance proxy metrics
                 gradient_norm = metrics.get("actor/grad_norm", None)
                 metrics.update(compute_variance_proxy_metrics(batch=batch, gradient_norm=gradient_norm))
+                metrics.update(self._collect_system_diagnostics(diagnostics_detailed))
                 # Note: mismatch metrics (KL, PPL, etc.) are collected at line 1179 after advantage computation
 
                 # this is experimental and may be changed/removed in the future in favor of a general-purpose one

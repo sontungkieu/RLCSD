@@ -19,6 +19,7 @@ transformers
 # vllm==0.8.4
 wandb
 packaging>=20.0
+psutil
 uvicorn
 fastapi
 latex2sympy2_extended

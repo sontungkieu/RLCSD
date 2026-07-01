@@ -20,6 +20,7 @@ Single Process Actor
 from contextlib import contextmanager, nullcontext
 import logging
 import os
+import time
 
 import torch
 import torch.nn.functional as F
@@ -34,6 +35,7 @@ from verl.utils.attention_utils import index_first_axis, pad_input, rearrange, u
 from verl.utils.device import get_device_id, get_device_name
 from verl.utils.fsdp_utils import FSDPModule, fsdp2_clip_grad_norm_
 from verl.utils.import_utils import deprecated
+from verl.utils.metric import Metric
 from verl.utils.profiler import GPUMemoryLogger
 from verl.utils.py_functional import append_to_dict
 from verl.utils.seqlen_balancing import (
@@ -648,6 +650,102 @@ class DataParallelPPOActor(BasePPOActor):
                     if name in self._teacher_shadow:
                         self._teacher_shadow[name].copy_(param.data.detach())
 
+    @staticmethod
+    def _diagnostic_scalar(value):
+        if isinstance(value, torch.Tensor):
+            return float(value.detach().float().item())
+        return float(value)
+
+    @staticmethod
+    def _diagnostic_sum_metric(value):
+        return Metric(aggregation="sum", value=DataParallelPPOActor._diagnostic_scalar(value))
+
+    @staticmethod
+    def _diagnostic_mean_metric(value):
+        return Metric(aggregation="mean", value=DataParallelPPOActor._diagnostic_scalar(value))
+
+    @staticmethod
+    def _diagnostic_max_metric(value):
+        return Metric(aggregation="max", value=DataParallelPPOActor._diagnostic_scalar(value))
+
+    @staticmethod
+    def _diagnostic_min_metric(value):
+        return Metric(aggregation="min", value=DataParallelPPOActor._diagnostic_scalar(value))
+
+    @staticmethod
+    def _diagnostics_cuda_sync():
+        if torch.cuda.is_available():
+            torch.cuda.synchronize()
+
+    @contextmanager
+    def _diagnostic_timer(self, metrics: dict, name: str, enabled: bool):
+        if not enabled:
+            yield
+            return
+        self._diagnostics_cuda_sync()
+        started_at = time.perf_counter()
+        try:
+            yield
+        finally:
+            self._diagnostics_cuda_sync()
+            metrics[name] = self._diagnostic_sum_metric(time.perf_counter() - started_at)
+
+    def _diagnostic_cuda_memory_metrics(self, suffix: str) -> dict:
+        if not torch.cuda.is_available():
+            return {}
+        device = get_device_id()
+        free_bytes, total_bytes = torch.cuda.mem_get_info(device)
+        gib = 1024**3
+        return {
+            f"gpu/mem_free_gb_{suffix}_min": self._diagnostic_min_metric(free_bytes / gib),
+            f"gpu/mem_total_gb_{suffix}": self._diagnostic_mean_metric(total_bytes / gib),
+            f"gpu/mem_allocated_gb_{suffix}_max": self._diagnostic_max_metric(
+                torch.cuda.memory_allocated(device) / gib
+            ),
+            f"gpu/mem_reserved_gb_{suffix}_max": self._diagnostic_max_metric(torch.cuda.memory_reserved(device) / gib),
+        }
+
+    def _diagnostic_token_metrics(
+        self,
+        model_inputs: dict,
+        teacher_correct_inputs: dict | None,
+        teacher_wrong_multi_inputs: dict | None,
+    ) -> dict:
+        response_mask = model_inputs["response_mask"]
+        response_tokens = response_mask.float().sum()
+        attention_mask = model_inputs.get("attention_mask")
+        input_tokens = attention_mask.float().sum() if attention_mask is not None else response_tokens
+        response_length = response_mask.shape[-1]
+        prompt_tokens = (
+            attention_mask[..., :-response_length].float().sum()
+            if attention_mask is not None and attention_mask.shape[-1] >= response_length
+            else input_tokens - response_tokens
+        )
+        metrics = {
+            "actor_tokens/prompt_sum": self._diagnostic_sum_metric(prompt_tokens),
+            "actor_tokens/response_sum": self._diagnostic_sum_metric(response_tokens),
+            "actor_tokens/input_sum": self._diagnostic_sum_metric(input_tokens),
+        }
+        if teacher_correct_inputs is not None:
+            correct_mask = teacher_correct_inputs["attention_mask"].float()
+            metrics["rlcsd/teacher_correct_tokens_mean"] = self._diagnostic_mean_metric(correct_mask.sum(dim=-1).mean())
+            metrics["rlcsd/teacher_correct_tokens_sum"] = self._diagnostic_sum_metric(correct_mask.sum())
+        if teacher_wrong_multi_inputs is not None:
+            valid_mask = teacher_wrong_multi_inputs["valid_mask"].bool()
+            wrong_mask = teacher_wrong_multi_inputs["attention_mask"].float()
+            valid_ctx_count = valid_mask.float().sum()
+            metrics["rlcsd/effective_k_mean"] = self._diagnostic_mean_metric(valid_mask.float().sum(dim=-1).mean())
+            metrics["rlcsd/teacher_wrong_multi_valid_contexts_sum"] = self._diagnostic_sum_metric(valid_ctx_count)
+            if self._diagnostic_scalar(valid_ctx_count) > 0:
+                valid_expanded = valid_mask.unsqueeze(-1).to(dtype=wrong_mask.dtype)
+                metrics["rlcsd/teacher_wrong_multi_tokens_mean"] = self._diagnostic_mean_metric(
+                    (wrong_mask * valid_expanded).sum() / valid_ctx_count.clamp_min(1.0)
+                )
+                metrics["rlcsd/teacher_wrong_multi_tokens_sum"] = self._diagnostic_sum_metric(
+                    (wrong_mask * valid_expanded).sum()
+                )
+        return metrics
+
     @contextmanager
     def _teacher_forward_context(self):
         """Temporarily swap the actor into teacher mode for one or more forwards."""
@@ -1033,6 +1131,7 @@ class DataParallelPPOActor(BasePPOActor):
         temperature = data.meta_info["temperature"]  # temperature must be in the data.meta_info to avoid silent error
         pad_token_id = data.meta_info.get("pad_token_id", 0)
         global_steps = data.meta_info.get("global_steps")
+        diagnostics_detailed = bool(data.meta_info.get("diagnostics_detailed", False))
 
         select_keys = [
             "responses",
@@ -1091,6 +1190,9 @@ class DataParallelPPOActor(BasePPOActor):
         metrics = {
             "actor/pg_loss": 0.0,
             "actor/kl_loss": 0.0}
+        if diagnostics_detailed:
+            metrics["diagnostics/actor_detailed_step"] = 1.0
+            metrics.update(self._diagnostic_cuda_memory_metrics("before_update_actor"))
         for _ in range(self.config.ppo_epochs):
             for batch_idx, mini_batch in enumerate(mini_batches):
                 mini_batch_loss_mode = self.config.policy_loss.get("loss_mode", "vanilla")
@@ -1249,12 +1351,17 @@ class DataParallelPPOActor(BasePPOActor):
                         else:
                             teacher_forward_inputs = teacher_inputs if teacher_inputs is not None else model_inputs
                             align_resp = teacher_inputs is not None
-                        teacher_outputs = self._teacher_forward(
-                            teacher_forward_inputs,
-                            temperature=temperature,
-                            calculate_entropy=True,
-                            distill_topk=top_k_distill,
-                            align_response_by_mask=align_resp)
+                        with self._diagnostic_timer(
+                            micro_batch_metrics,
+                            "actor_timing_s/teacher_preforward",
+                            diagnostics_detailed,
+                        ):
+                            teacher_outputs = self._teacher_forward(
+                                teacher_forward_inputs,
+                                temperature=temperature,
+                                calculate_entropy=True,
+                                distill_topk=top_k_distill,
+                                align_response_by_mask=align_resp)
                         if teacher_outputs is not None:
                             teacher_lp = teacher_outputs["log_probs"]
                             teacher_ent = teacher_outputs.get("entropys")
@@ -1262,13 +1369,29 @@ class DataParallelPPOActor(BasePPOActor):
                             teacher_topk_indices = teacher_outputs.get("topk_indices")
 
                     # all return: (bsz, response_length)
-                    outputs = self._forward_micro_batch(
-                        model_inputs,
-                        temperature=temperature,
-                        calculate_entropy=calculate_entropy,
-                        return_all_logps=need_full_distill and not use_sparse_topk,
-                        distill_topk=top_k_distill if use_sparse_topk and loss_mode in ("sdpo", "srpo") else None,
-                        topk_indices=teacher_topk_indices if use_sparse_topk and loss_mode in ("opsd", "opsd_ectr") else None)
+                    if diagnostics_detailed:
+                        micro_batch_metrics.update(
+                            self._diagnostic_token_metrics(
+                                model_inputs,
+                                teacher_correct_inputs=teacher_correct_inputs,
+                                teacher_wrong_multi_inputs=teacher_wrong_multi_inputs,
+                            )
+                        )
+
+                    with self._diagnostic_timer(
+                        micro_batch_metrics,
+                        "actor_timing_s/student_forward",
+                        diagnostics_detailed,
+                    ):
+                        outputs = self._forward_micro_batch(
+                            model_inputs,
+                            temperature=temperature,
+                            calculate_entropy=calculate_entropy,
+                            return_all_logps=need_full_distill and not use_sparse_topk,
+                            distill_topk=top_k_distill if use_sparse_topk and loss_mode in ("sdpo", "srpo") else None,
+                            topk_indices=teacher_topk_indices
+                            if use_sparse_topk and loss_mode in ("opsd", "opsd_ectr")
+                            else None)
                     log_prob = outputs["log_probs"]
                     entropy = outputs["entropys"] if calculate_entropy else None
                     student_all_log_probs = outputs.get("all_log_probs")
@@ -1299,16 +1422,26 @@ class DataParallelPPOActor(BasePPOActor):
                             assert teacher_correct_inputs is not None and teacher_wrong_inputs is not None, (
                                 f"{loss_mode} requires teacher_correct_* and teacher_wrong_* tensors in the batch."
                             )
-                            teacher_correct_outputs = self._teacher_forward(
-                                teacher_correct_inputs,
-                                temperature=temperature,
-                                calculate_entropy=True,
-                                align_response_by_mask=True)
-                            teacher_wrong_outputs = self._teacher_forward(
-                                teacher_wrong_inputs,
-                                temperature=temperature,
-                                calculate_entropy=True,
-                                align_response_by_mask=True)
+                            with self._diagnostic_timer(
+                                micro_batch_metrics,
+                                "actor_timing_s/teacher_correct_forward",
+                                diagnostics_detailed,
+                            ):
+                                teacher_correct_outputs = self._teacher_forward(
+                                    teacher_correct_inputs,
+                                    temperature=temperature,
+                                    calculate_entropy=True,
+                                    align_response_by_mask=True)
+                            with self._diagnostic_timer(
+                                micro_batch_metrics,
+                                "actor_timing_s/teacher_wrong_forward",
+                                diagnostics_detailed,
+                            ):
+                                teacher_wrong_outputs = self._teacher_forward(
+                                    teacher_wrong_inputs,
+                                    temperature=temperature,
+                                    calculate_entropy=True,
+                                    align_response_by_mask=True)
                             teacher_lp = teacher_correct_outputs["log_probs"]
                             teacher_ent = teacher_correct_outputs.get("entropys")
                             teacher_wrong_lp = teacher_wrong_outputs["log_probs"]
@@ -1322,15 +1455,25 @@ class DataParallelPPOActor(BasePPOActor):
                             assert teacher_correct_inputs is not None and teacher_wrong_multi_inputs is not None, (
                                 f"{loss_mode} requires teacher_correct_* and teacher_wrong_multi_* tensors in the batch."
                             )
-                            teacher_correct_outputs = self._teacher_forward(
-                                teacher_correct_inputs,
-                                temperature=temperature,
-                                calculate_entropy=True,
-                                align_response_by_mask=True)
-                            teacher_wrong_multi_outputs_local = self._teacher_forward_multi(
-                                teacher_wrong_multi_inputs,
-                                temperature=temperature,
-                                calculate_entropy=True)
+                            with self._diagnostic_timer(
+                                micro_batch_metrics,
+                                "actor_timing_s/teacher_correct_forward",
+                                diagnostics_detailed,
+                            ):
+                                teacher_correct_outputs = self._teacher_forward(
+                                    teacher_correct_inputs,
+                                    temperature=temperature,
+                                    calculate_entropy=True,
+                                    align_response_by_mask=True)
+                            with self._diagnostic_timer(
+                                micro_batch_metrics,
+                                "actor_timing_s/teacher_wrong_multi_forward",
+                                diagnostics_detailed,
+                            ):
+                                teacher_wrong_multi_outputs_local = self._teacher_forward_multi(
+                                    teacher_wrong_multi_inputs,
+                                    temperature=temperature,
+                                    calculate_entropy=True)
                             teacher_lp = teacher_correct_outputs["log_probs"]
                             teacher_ent = teacher_correct_outputs.get("entropys")
                             teacher_wrong_multi_lp = teacher_wrong_multi_outputs_local["log_probs"]
@@ -1339,36 +1482,57 @@ class DataParallelPPOActor(BasePPOActor):
                         else:
                             teacher_forward_inputs = teacher_inputs if teacher_inputs is not None else model_inputs
                             if teacher_inputs is not None:
-                                teacher_outputs = self._teacher_forward(
-                                    teacher_forward_inputs,
-                                    temperature=temperature,
-                                    calculate_entropy=True,
-                                    return_all_logps=need_full_distill and not use_sparse_topk,
-                                    topk_indices=student_topk_indices if use_sparse_topk and loss_mode in ("sdpo", "srpo") else None,
-                                    align_response_by_mask=True)
+                                with self._diagnostic_timer(
+                                    micro_batch_metrics,
+                                    "actor_timing_s/teacher_forward",
+                                    diagnostics_detailed,
+                                ):
+                                    teacher_outputs = self._teacher_forward(
+                                        teacher_forward_inputs,
+                                        temperature=temperature,
+                                        calculate_entropy=True,
+                                        return_all_logps=need_full_distill and not use_sparse_topk,
+                                        topk_indices=student_topk_indices
+                                        if use_sparse_topk and loss_mode in ("sdpo", "srpo")
+                                        else None,
+                                        align_response_by_mask=True)
                             elif teacher_lp is None or need_full_distill or (use_sparse_topk and loss_mode in ("sdpo", "srpo")):
                                 if self._teacher_mode == "fixed":
                                     if need_full_distill or use_sparse_topk:
-                                        teacher_outputs = self._teacher_forward(
-                                            model_inputs,
-                                            temperature=temperature,
-                                            calculate_entropy=True,
-                                            return_all_logps=need_full_distill and not use_sparse_topk,
-                                            topk_indices=student_topk_indices if use_sparse_topk and loss_mode in ("sdpo", "srpo") else None,
-                                            align_response_by_mask=False)
+                                        with self._diagnostic_timer(
+                                            micro_batch_metrics,
+                                            "actor_timing_s/teacher_forward",
+                                            diagnostics_detailed,
+                                        ):
+                                            teacher_outputs = self._teacher_forward(
+                                                model_inputs,
+                                                temperature=temperature,
+                                                calculate_entropy=True,
+                                                return_all_logps=need_full_distill and not use_sparse_topk,
+                                                topk_indices=student_topk_indices
+                                                if use_sparse_topk and loss_mode in ("sdpo", "srpo")
+                                                else None,
+                                                align_response_by_mask=False)
                                     else:
                                         # Fixed teacher = base model = ref policy
                                         teacher_lp = model_inputs.get("ref_log_prob")
                                         teacher_ent = model_inputs.get("teacher_entropy")
                                 elif self._teacher_mode in ("ema", "snapshot") and self._teacher_shadow is not None:
                                     # EMA/snapshot: forward pass with shadow weights
-                                    teacher_outputs = self._teacher_forward(
-                                        model_inputs,
-                                        temperature=temperature,
-                                        calculate_entropy=True,
-                                        return_all_logps=need_full_distill and not use_sparse_topk,
-                                        topk_indices=student_topk_indices if use_sparse_topk and loss_mode in ("sdpo", "srpo") else None,
-                                        align_response_by_mask=False)
+                                    with self._diagnostic_timer(
+                                        micro_batch_metrics,
+                                        "actor_timing_s/teacher_forward",
+                                        diagnostics_detailed,
+                                    ):
+                                        teacher_outputs = self._teacher_forward(
+                                            model_inputs,
+                                            temperature=temperature,
+                                            calculate_entropy=True,
+                                            return_all_logps=need_full_distill and not use_sparse_topk,
+                                            topk_indices=student_topk_indices
+                                            if use_sparse_topk and loss_mode in ("sdpo", "srpo")
+                                            else None,
+                                            align_response_by_mask=False)
 
                             if teacher_outputs is not None:
                                 teacher_lp = teacher_outputs["log_probs"]
@@ -1386,12 +1550,17 @@ class DataParallelPPOActor(BasePPOActor):
                         assert teacher_wrong_inputs is not None and teacher_topk_indices is not None, (
                             "opsd_ectr requires teacher_wrong_* tensors and pre-computed teacher_topk_indices."
                         )
-                        teacher_wrong_outputs = self._teacher_forward(
-                            teacher_wrong_inputs,
-                            temperature=temperature,
-                            calculate_entropy=True,
-                            topk_indices=teacher_topk_indices,
-                            align_response_by_mask=True)
+                        with self._diagnostic_timer(
+                            micro_batch_metrics,
+                            "actor_timing_s/teacher_wrong_forward",
+                            diagnostics_detailed,
+                        ):
+                            teacher_wrong_outputs = self._teacher_forward(
+                                teacher_wrong_inputs,
+                                temperature=temperature,
+                                calculate_entropy=True,
+                                topk_indices=teacher_topk_indices,
+                                align_response_by_mask=True)
                         teacher_wrong_lp = teacher_wrong_outputs["log_probs"]
                         teacher_wrong_ent = teacher_wrong_outputs.get("entropys")
                         teacher_wrong_topk_log_probs = teacher_wrong_outputs.get("topk_log_probs")
@@ -1432,14 +1601,19 @@ class DataParallelPPOActor(BasePPOActor):
                         loss_kwargs["teacher_wrong_multi_log_probs"] = teacher_wrong_multi_lp
                         loss_kwargs["teacher_wrong_multi_valid_mask"] = teacher_wrong_multi_valid_mask
                         loss_kwargs["teacher_wrong_multi_entropy"] = teacher_wrong_multi_ent
-                    pg_loss, pg_metrics = policy_loss_fn(**loss_kwargs)
+                    with self._diagnostic_timer(
+                        micro_batch_metrics,
+                        "actor_timing_s/policy_loss",
+                        diagnostics_detailed,
+                    ):
+                        pg_loss, pg_metrics = policy_loss_fn(**loss_kwargs)
                     micro_batch_metrics.update(pg_metrics)
 
                     # Skip if using bypass_mode loss (metrics already computed in pg_metrics)
                     rollout_log_prob = model_inputs.get("rollout_log_probs", None)
                     if loss_mode != "bypass_mode" and rollout_log_prob is not None:
-                        # Compute metrics using CURRENT policy π_θ vs π_rollout
-                        # Tracks evolving off-policy gap as π_θ updates during mini-batch training
+                        # Compute metrics using CURRENT policy pi_theta vs pi_rollout.
+                        # Tracks evolving off-policy gap as pi_theta updates during mini-batch training.
                         from verl.trainer.ppo.rollout_corr_helper import compute_rollout_corr_metrics_from_logprobs
 
                         rollout_corr_metrics = compute_rollout_corr_metrics_from_logprobs(
@@ -1472,18 +1646,36 @@ class DataParallelPPOActor(BasePPOActor):
                         loss = policy_loss * loss_scale_factor
                     else:
                         loss = policy_loss * loss_scale_factor
-                    if self.scaler is not None:
-                        self.scaler.scale(loss).backward()
-                    else:
-                        loss.backward()
+                    with self._diagnostic_timer(
+                        micro_batch_metrics,
+                        "actor_timing_s/backward",
+                        diagnostics_detailed,
+                    ):
+                        if self.scaler is not None:
+                            self.scaler.scale(loss).backward()
+                        else:
+                            loss.backward()
 
                     metrics["actor/pg_loss"] += pg_loss.detach().item() * loss_scale_factor
                     append_to_dict(metrics, micro_batch_metrics)
 
-                grad_norm = self._optimizer_step()
+                mini_batch_metrics = {}
+                with self._diagnostic_timer(
+                    mini_batch_metrics,
+                    "actor_timing_s/optimizer_step",
+                    diagnostics_detailed,
+                ):
+                    grad_norm = self._optimizer_step()
                 # Update teacher shadow weights after optimizer step
-                self._update_teacher_shadow()
-                mini_batch_metrics = {"actor/grad_norm": grad_norm.detach().item()}
+                with self._diagnostic_timer(
+                    mini_batch_metrics,
+                    "actor_timing_s/teacher_snapshot_update",
+                    diagnostics_detailed,
+                ):
+                    self._update_teacher_shadow()
+                mini_batch_metrics["actor/grad_norm"] = grad_norm.detach().item()
                 append_to_dict(metrics, mini_batch_metrics)
         self.actor_optimizer.zero_grad()
+        if diagnostics_detailed:
+            metrics.update(self._diagnostic_cuda_memory_metrics("after_update_actor"))
         return metrics

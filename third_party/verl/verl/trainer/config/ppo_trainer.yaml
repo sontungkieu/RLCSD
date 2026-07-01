@@ -201,6 +201,16 @@ trainer:
   #  mode: "auto", "enable", or "disable"
   use_legacy_worker_impl: disable
 
+# Lightweight diagnostics for TensorBoard/metrics.jsonl.
+# Detailed actor/Ray/disk metrics are logged for the first N steps, then every N steps.
+diagnostics:
+  enabled: True
+  system_metrics: True
+  detailed_first_n_steps: 10
+  detailed_every_n_steps: 10
+  ray_resources: True
+  disk_io: True
+
 # profiler configs
 global_profiler:
 

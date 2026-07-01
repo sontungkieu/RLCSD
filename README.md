@@ -190,6 +190,17 @@ runs:
 tensorboard --logdir outputs --host 127.0.0.1 --port 6006
 ```
 
+RLCSD diagnostics are enabled by default. In addition to coarse `timing_s/*`
+keys, runs log scheduled actor internals such as `actor_timing_s/student_forward`,
+`actor_timing_s/teacher_correct_forward`, `actor_timing_s/teacher_wrong_multi_forward`,
+`actor_timing_s/policy_loss`, `actor_timing_s/backward`, and
+`actor_timing_s/optimizer_step`. TensorBoard also receives token/memory/system
+keys under `actor_tokens/*`, `rlcsd/*`, `gpu/*`, `sys/*`, `proc/*`, and, on
+detailed steps, `ray/*` and disk I/O rates. By default the detailed actor/Ray/disk
+metrics are emitted for steps 1-10 and then every 10th step; override with
+`diagnostics.detailed_first_n_steps=... diagnostics.detailed_every_n_steps=...`
+or disable with `diagnostics.enabled=False`.
+
 ## Results
 
 ### Main results across model scales
