@@ -1,0 +1,68 @@
+method: rlcsd
+model_path: Qwen/Qwen3-1.7B
+use_lora: false
+
+learning_rate: 1e-6
+num_epochs: 1
+per_device_batch_size: 1
+group_size: 4
+ppo_mini_batch_size: 4
+max_grad_norm: 1.0
+warmup_steps: 0
+weight_decay: 0.01
+max_train_samples: 1
+save_steps: -1
+eval_steps: -1
+logging_steps: 1
+rollout_is: token
+rollout_is_threshold: 2.0
+
+max_prompt_length: 256
+max_completion_length: 128
+val_max_completion_length: 128
+actor_max_token_len_per_gpu: 384
+temperature: 1.0
+top_p: 0.95
+top_k_sampling: 20
+student_enable_thinking: false
+val_enable_thinking: false
+val_do_sample: false
+val_n: 1
+val_temperature: 0.0
+val_top_p: 1.0
+val_top_k: -1
+val_batch_size: 1
+teacher_enable_thinking: false
+
+privileged_text_mode: solution_answer
+
+vllm_gpu_memory_utilization: 0.30
+vllm_tensor_parallel_size: 1
+vllm_attention_backend: None
+
+kl_loss_coef: 0
+epsilon: 0.2
+rlcsd_tau: 0.02
+rlcsd_beta: 1.0
+rlcsd_lam: 0.5
+rlcsd_delta: 0.02
+rlcsd_eta: 1.0
+rlcsd_residual_clip_low: -2.0
+rlcsd_residual_clip_high: 2.0
+rlcsd_k_max: 1
+teacher_sync_interval: 1
+teacher_mode: snapshot
+
+output_dir: /tmp/rlcsd-smoke/outputs
+data_dir: /tmp/rlcsd-smoke/data
+train_files: /tmp/rlcsd-smoke/data/train.parquet
+val_files: /tmp/rlcsd-smoke/data/val.parquet
+train_dataset: rlcsd_smoke
+val_dataset: rlcsd_smoke
+use_tensorboard: false
+project_name: rlcsd-smoke
+experiment_name: qwen3_1_7b_rlcsd_32gb_smoke
+val_before_train: false
+
+custom_reward_function_path: docker/smoke_reward.py
+custom_reward_function_name: compute_score

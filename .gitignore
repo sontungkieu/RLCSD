@@ -9,6 +9,7 @@ __pycache__/
 outputs/
 checkpoints/
 tensorboard_log/
+remote_artifacts/
 *.log
 *.zip*
 

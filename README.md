@@ -122,6 +122,83 @@ A few practical notes:
 - `requirements.txt` is kept as a legacy pip fallback for older environments.
 - `third_party/verl/` is added to `PYTHONPATH` automatically by `_run_verl.sh`.
 
+### Portable CUDA 13 Docker runtime
+
+For offline Blackwell reproduction, build a runtime-only Docker image and keep
+models, datasets, checkpoints, and run outputs outside the image. The Docker
+build targets both B200/GB200 (`sm_100`) and RTX 50-series smoke-test hosts
+(`sm_120`):
+
+```bash
+export TORCH_CUDA_ARCH_LIST="10.0;12.0+PTX"
+export CUDAARCHS="100;120"
+export CMAKE_CUDA_ARCHITECTURES="100;120"
+export MAX_JOBS=4
+export INSTALL_FLASH_ATTN=0
+bash docker/build_push.sh codemaivanngu/rlcsd:b200-cu13-vllm024-sm100-sm120
+```
+
+The script builds `docker/Dockerfile.rlc-runtime`, runs
+`docker/smoke_test.py` with `--gpus all`, and pushes the image tag. It assumes
+the Docker host is already logged in to the target registry. Keep `MAX_JOBS`
+low on small Vast instances because CUDA extension builds can exhaust RAM.
+`INSTALL_FLASH_ATTN=0` uses the SDPA fallback path; set it to `1` only on a
+builder with enough RAM for source-building Blackwell CUDA extensions.
+`.dockerignore` keeps `.env`, `data/`, `outputs/`, and archived experiment
+artifacts out of the image.
+
+To run a constrained Qwen3-1.7B RLCSD mini-epoch inside the built image:
+
+```bash
+docker run --rm --gpus all codemaivanngu/rlcsd:b200-cu13-vllm024-sm100-sm120 \
+  bash /workspace/RLCSD/docker/run_mini_epoch.sh
+```
+
+For a fast runtime-only smoke that avoids downloading a full model, create a
+tiny local Qwen2-compatible checkpoint outside the image and point the mini
+epoch at that path:
+
+```bash
+docker run --rm --gpus all \
+  -v "$PWD/tiny-qwen2-random:/models/tiny-qwen2-random" \
+  codemaivanngu/rlcsd:b200-cu13-vllm024-sm100-sm120 \
+  python3 /workspace/RLCSD/docker/make_tiny_qwen2_model.py --out /models/tiny-qwen2-random
+
+docker run --rm --gpus all --ipc=host --shm-size=16g \
+  -v "$PWD/tiny-qwen2-random:/models/tiny-qwen2-random:ro" \
+  -e RLCSD_SMOKE_MODEL=/models/tiny-qwen2-random \
+  codemaivanngu/rlcsd:b200-cu13-vllm024-sm100-sm120 \
+  bash /workspace/RLCSD/docker/run_mini_epoch.sh
+```
+
+To smoke-test the pushed image on Modal B200:
+
+```bash
+RLCSD_IMAGE=codemaivanngu/rlcsd:b200-cu13-vllm024-sm100-sm120 \
+  uvx --from modal modal run docker/modal_b200_smoke.py::smoke
+```
+
+Run `mini_epoch` to test the tiny-model epoch smoke from the pushed image.
+`RLCSD_MODAL_GPU` defaults to `B200`; set it to another Modal GPU type only for
+access/debug fallback:
+
+```bash
+RLCSD_MODAL_GPU=L40S RLCSD_MODAL_FORCE_BUILD=1 \
+  uvx --from modal modal run docker/modal_b200_smoke.py::mini_epoch
+```
+
+Modal must have billing enabled for B200 jobs; otherwise the run stops before
+the container starts with `Please add a payment method to use B200 GPU
+functions.`
+
+If no Docker host is available, Modal can build the same Dockerfile for a direct
+B200 smoke or mini-epoch test without pushing to DockerHub:
+
+```bash
+uvx --from modal modal run docker/modal_build_smoke.py::smoke
+uvx --from modal modal run docker/modal_build_smoke.py::mini_epoch
+```
+
 ## Data
 
 Training and eval parquets live at
