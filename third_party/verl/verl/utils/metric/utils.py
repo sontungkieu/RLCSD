@@ -125,6 +125,8 @@ def reduce_metrics(metrics: dict[str, Union["Metric", list[Any]]]) -> dict[str, 
     for key, val in metrics.items():
         if isinstance(val, Metric):
             metrics[key] = val.aggregate()
+        elif isinstance(val, list) and val and all(isinstance(item, Metric) for item in val):
+            metrics[key] = Metric.aggregate_dp(val)
         elif _SUM_KEY.fullmatch(key):
             metrics[key] = _reduce_sum_metric(key, val)
         elif "max" in key:

@@ -301,13 +301,12 @@ def compute_timing_metrics(batch: DataProto, timing_raw: dict[str, float]) -> di
         **{name: num_overall_tokens for name in ["ref", "values", "adv", "update_critic", "update_actor"]},
     }
 
-    return {
-        **{f"timing_s/{name}": value for name, value in timing_raw.items()},
-        **{
-            f"timing_per_token_ms/{name}": timing_raw[name] * 1000 / num_tokens_of_section[name]
-            for name in set(num_tokens_of_section.keys()) & set(timing_raw.keys())
-        },
-    }
+    timing_metrics = {f"timing_s/{name}": value for name, value in timing_raw.items()}
+    for name in set(num_tokens_of_section.keys()) & set(timing_raw.keys()):
+        denom = num_tokens_of_section[name]
+        if denom > 0:
+            timing_metrics[f"timing_per_token_ms/{name}"] = timing_raw[name] * 1000 / denom
+    return timing_metrics
 
 
 def compute_throughout_metrics(batch: DataProto, timing_raw: dict[str, float], n_gpus: int) -> dict[str, Any]:
