@@ -1,0 +1,629 @@
++ CONFIG=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml
++ shift
++ export CUDA_HOME=/usr/local/cuda
++ CUDA_HOME=/usr/local/cuda
++ export PATH=/usr/local/cuda/bin:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/bin:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
++ PATH=/usr/local/cuda/bin:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/bin:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/games:/usr/local/games:/snap/bin
++ '[' -n '' ']'
++ export VLLM_WORKER_MULTIPROC_METHOD=spawn
++ VLLM_WORKER_MULTIPROC_METHOD=spawn
++ export HYDRA_FULL_ERROR=1
++ HYDRA_FULL_ERROR=1
++ export PYTHONUNBUFFERED=1
++ PYTHONUNBUFFERED=1
++ export TORCH_NCCL_TRACE_BUFFER_SIZE=20000
++ TORCH_NCCL_TRACE_BUFFER_SIZE=20000
+++ dirname scripts/_run_verl.sh
++ cd scripts/..
+++ pwd
+++ pwd
++ export PYTHONPATH=/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl:/workspace/rlcsd_3090ti_16k_20260702_1224/repo:
++ PYTHONPATH=/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl:/workspace/rlcsd_3090ti_16k_20260702_1224/repo:
++ readarray -t NVIDIA_SITE_PATHS
+++ python3 -
++ NVIDIA_SITE_LIBS=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/lib
++ NVIDIA_SITE_INCLUDES=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/include
++ '[' -n /workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/lib ']'
++ export LD_LIBRARY_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/lib:
++ LD_LIBRARY_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/lib:
++ export LIBRARY_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/lib:
++ LIBRARY_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/lib:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/lib:
++ '[' -n /workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/include ']'
++ export CPATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/include:
++ CPATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/include:
++ export C_INCLUDE_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/include:
++ C_INCLUDE_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/include:
++ export CPLUS_INCLUDE_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/include:
++ CPLUS_INCLUDE_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cublas/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_cupti/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_nvrtc/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cuda_runtime/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cudnn/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufft/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cufile/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/curand/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusolver/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparse/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/cusparselt/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nccl/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvjitlink/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvshmem/include:/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/nvidia/nvtx/include:
+++ Y method grpo
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''method'\'','\''grpo'\''))'
++ METHOD=rlcsd
+++ Y model_path Qwen/Qwen3-1.7B
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''model_path'\'','\''Qwen/Qwen3-1.7B'\''))'
++ MODEL_PATH=Qwen/Qwen3-1.7B
+++ Y use_lora true
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''use_lora'\'','\''true'\''))'
++ USE_LORA=False
+++ Y lora_r 64
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''lora_r'\'','\''64'\''))'
++ LORA_R=64
+++ Y lora_alpha 128
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''lora_alpha'\'','\''128'\''))'
++ LORA_ALPHA=128
+++ Y learning_rate 1e-5
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''learning_rate'\'','\''1e-5'\''))'
++ LR=1e-6
+++ Y num_epochs 30
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''num_epochs'\'','\''30'\''))'
++ NUM_EPOCHS=1
+++ Y per_device_batch_size 4
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''per_device_batch_size'\'','\''4'\''))'
++ BS=8
+++ Y group_size 4
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''group_size'\'','\''4'\''))'
++ GROUP_SIZE=8
+++ Y max_grad_norm 1.0
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''max_grad_norm'\'','\''1.0'\''))'
++ MAX_GRAD_NORM=1.0
+++ Y warmup_steps 50
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''warmup_steps'\'','\''50'\''))'
++ WARMUP=50
+++ Y weight_decay 0.01
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''weight_decay'\'','\''0.01'\''))'
++ WEIGHT_DECAY=0.01
+++ Y max_train_samples 17000
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''max_train_samples'\'','\''17000'\''))'
++ MAX_TRAIN=8
+++ Y save_steps 200
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''save_steps'\'','\''200'\''))'
++ SAVE_STEPS=-1
+++ Y eval_steps 100
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''eval_steps'\'','\''100'\''))'
++ EVAL_STEPS=-1
+++ Y max_prompt_length 2048
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''max_prompt_length'\'','\''2048'\''))'
++ MAX_PROMPT=2048
+++ Y max_completion_length 2048
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''max_completion_length'\'','\''2048'\''))'
++ MAX_RESP=16384
+++ Y val_max_completion_length 38912
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_max_completion_length'\'','\''38912'\''))'
++ VAL_MAX_RESP=38912
+++ Y actor_max_token_len_per_gpu ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''actor_max_token_len_per_gpu'\'','\'''\''))'
++ ACTOR_MAX_TOKEN_LEN=40960
+++ Y temperature 1.0
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''temperature'\'','\''1.0'\''))'
++ TEMP=1.0
+++ Y top_p 0.95
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''top_p'\'','\''0.95'\''))'
++ TOP_P=0.95
+++ Y top_k_sampling 20
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''top_k_sampling'\'','\''20'\''))'
++ TOP_K=20
+++ Y vllm_gpu_memory_utilization 0.6
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''vllm_gpu_memory_utilization'\'','\''0.6'\''))'
++ GPU_MEM=0.6
+++ Y vllm_tensor_parallel_size 2
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''vllm_tensor_parallel_size'\'','\''2'\''))'
++ TP=1
+++ Y vllm_attention_backend FLASH_ATTN
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''vllm_attention_backend'\'','\''FLASH_ATTN'\''))'
++ VLLM_ATTENTION_BACKEND=FLASH_ATTN
+++ Y student_enable_thinking false
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''student_enable_thinking'\'','\''false'\''))'
++ STUDENT_ENABLE_THINKING=True
+++ Y val_enable_thinking true
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_enable_thinking'\'','\''true'\''))'
++ VAL_ENABLE_THINKING=True
+++ Y val_do_sample true
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_do_sample'\'','\''true'\''))'
++ VAL_DO_SAMPLE=True
+++ Y val_n 12
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_n'\'','\''12'\''))'
++ VAL_N=12
+++ Y val_temperature 0.6
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_temperature'\'','\''0.6'\''))'
++ VAL_TEMP=0.6
+++ Y val_top_p 0.95
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_top_p'\'','\''0.95'\''))'
++ VAL_TOP_P=0.95
+++ Y val_top_k 20
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_top_k'\'','\''20'\''))'
++ VAL_TOP_K=20
+++ Y val_batch_size 16
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_batch_size'\'','\''16'\''))'
++ VAL_BATCH_SIZE=16
+++ Y teacher_enable_thinking true
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''teacher_enable_thinking'\'','\''true'\''))'
++ TEACHER_ENABLE_THINKING=True
+++ Y thinking_system_prompt false
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''thinking_system_prompt'\'','\''false'\''))'
++ THINKING_SYSTEM_PROMPT=false
+++ Y project_name rlcsd
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''project_name'\'','\''rlcsd'\''))'
++ PROJECT=rlcsd-qwen3_1_7b-math_deepmath
+++ Y experiment_name rlcsd
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''experiment_name'\'','\''rlcsd'\''))'
++ EXPERIMENT_NAME=qwen3_1_7b_rlcsd_standard_16k_train_bench
+++ Y output_dir ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''output_dir'\'','\'''\''))'
++ OUTPUT_DIR=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench
+++ Y val_before_train false
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_before_train'\'','\''false'\''))'
++ VAL_BEFORE=False
+++ Y use_tensorboard true
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''use_tensorboard'\'','\''true'\''))'
++ USE_TENSORBOARD=True
+++ Y privileged_text_mode solution_answer
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''privileged_text_mode'\'','\''solution_answer'\''))'
++ PRIVILEGED_TEXT_MODE=solution_answer
+++ Y teacher_model_path ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''teacher_model_path'\'','\'''\''))'
++ TEACHER_MODEL_PATH=
+++ Y teacher_enable_resource_pool false
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''teacher_enable_resource_pool'\'','\''false'\''))'
++ TEACHER_ENABLE_RESOURCE_POOL=false
+++ Y teacher_n_gpus_per_node 0
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''teacher_n_gpus_per_node'\'','\''0'\''))'
++ TEACHER_N_GPUS_PER_NODE=0
+++ Y n_gpus_per_node ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''n_gpus_per_node'\'','\'''\''))'
++ N_GPUS_PER_NODE=
+++ Y teacher_tp_size 1
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''teacher_tp_size'\'','\''1'\''))'
++ TEACHER_TP_SIZE=1
+++ Y teacher_gpu_memory_utilization 0.3
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''teacher_gpu_memory_utilization'\'','\''0.3'\''))'
++ TEACHER_GPU_MEM=0.3
+++ Y distillation_loss_mode k1
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distillation_loss_mode'\'','\''k1'\''))'
++ DISTILL_LOSS_MODE=k1
+++ Y distillation_use_policy_gradient true
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distillation_use_policy_gradient'\'','\''true'\''))'
++ DISTILL_USE_PG=true
+++ Y distillation_use_task_rewards false
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distillation_use_task_rewards'\'','\''false'\''))'
++ DISTILL_USE_TASK_REWARDS=false
+++ Y distillation_topk 64
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distillation_topk'\'','\''64'\''))'
++ DISTILL_TOPK=64
+++ Y distillation_loss_coef 1.0
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distillation_loss_coef'\'','\''1.0'\''))'
++ DISTILL_LOSS_COEF=1.0
+++ Y distillation_loss_max_clamp 10.0
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distillation_loss_max_clamp'\'','\''10.0'\''))'
++ DISTILL_LOSS_MAX_CLAMP=10.0
+++ Y distillation_log_prob_min_clamp -10.0
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distillation_log_prob_min_clamp'\'','\''-10.0'\''))'
++ DISTILL_LOG_PROB_MIN_CLAMP=-10.0
+++ Y distillation_num_workers 8
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distillation_num_workers'\'','\''8'\''))'
++ DISTILL_NUM_WORKERS=8
+++ Y data_dir ./data
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''data_dir'\'','\''./data'\''))'
++ DATA_ROOT=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data
+++ Y train_dataset dapo_math_17k
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''train_dataset'\'','\''dapo_math_17k'\''))'
++ TRAIN_DATASET=deepmath_filtered_level5_7
+++ Y val_dataset amc23,aime24,aime25
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_dataset'\'','\''amc23,aime24,aime25'\''))'
++ VAL_DATASET=amc23,aime24,aime25
+++ Y train_files ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''train_files'\'','\'''\''))'
++ TRAIN_FILES=
+++ Y val_files ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''val_files'\'','\'''\''))'
++ VAL_FILES=
+++ Y reward_manager_name ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''reward_manager_name'\'','\'''\''))'
++ REWARD_MANAGER_NAME=
+++ Y use_custom_reward_function true
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''use_custom_reward_function'\'','\''true'\''))'
++ USE_CUSTOM_REWARD_FUNCTION=true
+++ Y custom_reward_function_path src/verl_reward.py
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''custom_reward_function_path'\'','\''src/verl_reward.py'\''))'
++ CUSTOM_REWARD_FUNCTION_PATH=src/verl_reward.py
+++ Y custom_reward_function_name compute_score
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''custom_reward_function_name'\'','\''compute_score'\''))'
++ CUSTOM_REWARD_FUNCTION_NAME=compute_score
+++ Y nccl_timeout 7200
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''nccl_timeout'\'','\''7200'\''))'
++ NCCL_TIMEOUT=7200
+++ Y rollout_is ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_is'\'','\'''\''))'
++ ROLLOUT_IS=token
+++ Y rollout_is_threshold ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_is_threshold'\'','\'''\''))'
++ ROLLOUT_IS_THRESHOLD=2.0
+++ Y rollout_is_batch_normalize ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_is_batch_normalize'\'','\'''\''))'
++ ROLLOUT_IS_BATCH_NORMALIZE=
+++ Y rollout_rs ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_rs'\'','\'''\''))'
++ ROLLOUT_RS=
+++ Y rollout_rs_threshold ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_rs_threshold'\'','\'''\''))'
++ ROLLOUT_RS_THRESHOLD=
+++ Y override_max_position_embeddings ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''override_max_position_embeddings'\'','\'''\''))'
++ OVERRIDE_MAX_POSITION_EMBEDDINGS=
+++ Y rope_scaling_type ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rope_scaling_type'\'','\'''\''))'
++ ROPE_SCALING_TYPE=
+++ Y rope_scaling_factor ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rope_scaling_factor'\'','\'''\''))'
++ ROPE_SCALING_FACTOR=
+++ Y rope_scaling_original_max_position_embeddings ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rope_scaling_original_max_position_embeddings'\'','\'''\''))'
++ ROPE_SCALING_ORIGINAL_MAX_POSITION_EMBEDDINGS=
+++ Y kl_loss_coef ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''kl_loss_coef'\'','\'''\''))'
++ KL_LOSS_COEF=0
++ RESUME_DIR=
+++ echo False
+++ tr '[:upper:]' '[:lower:]'
++ USE_LORA_LOWER=false
+++ echo true
+++ tr '[:upper:]' '[:lower:]'
++ USE_CUSTOM_REWARD_FUNCTION_LOWER=true
+++ echo True
+++ tr '[:upper:]' '[:lower:]'
++ USE_TENSORBOARD_LOWER=true
++ case "$METHOD" in
++ '[' rlcsd = opd ']'
++ '[' -z qwen3_1_7b_rlcsd_standard_16k_train_bench ']'
++ '[' qwen3_1_7b_rlcsd_standard_16k_train_bench = None ']'
++ '[' -z /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench ']'
++ '[' /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench = None ']'
++ REWARD_ARGS=()
++ '[' -n '' ']'
++ '[' true = true ']'
++ '[' -n src/verl_reward.py ']'
++ '[' src/verl_reward.py '!=' None ']'
++ '[' -n compute_score ']'
++ '[' compute_score '!=' None ']'
++ REWARD_ARGS+=(reward.custom_reward_function.path=${CUSTOM_REWARD_FUNCTION_PATH} reward.custom_reward_function.name=${CUSTOM_REWARD_FUNCTION_NAME})
++ LORA_ARGS=(actor_rollout_ref.model.lora.merge=False actor_rollout_ref.model.lora_rank=0)
++ '[' false = true ']'
++ HYDRA_ARGS=()
++ '[' -z '' ']'
+++ detect_n_gpus_per_node
+++ '[' -n '' ']'
+++ command -v nvidia-smi
+++ nvidia-smi -L
+++ wc -l
+++ tr -d ' '
+++ return
++ N_GPUS_PER_NODE=1
++ '[' -z 1 ']'
++ '[' 1 = 0 ']'
++ '[' 1 -gt 1 ']'
++ '[' 0 -ne 0 ']'
++ NUM_DP=1
++ '[' -n FLASH_ATTN ']'
++ '[' FLASH_ATTN '!=' None ']'
++ export VLLM_ATTENTION_BACKEND
++ ROLLOUT_BATCH=8
++ ROLLOUT_SAMPLES=64
+++ Y ppo_mini_batch_size 8
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''ppo_mini_batch_size'\'','\''8'\''))'
++ PPO_MINI_BS=16
++ TRAIN_MAX_SEQ_LEN=18432
++ VAL_MAX_SEQ_LEN=40960
++ ROLLOUT_MAX_MODEL_LEN=18432
++ '[' 40960 -gt 18432 ']'
++ ROLLOUT_MAX_MODEL_LEN=40960
++ '[' -z 40960 ']'
++ '[' 40960 = None ']'
++ LOGPROB_MAX_RESP=16384
++ '[' 38912 -gt 16384 ']'
++ LOGPROB_MAX_RESP=38912
++ LOGPROB_MAX_SEQ_LEN=40960
++ ROLLOUT_MAX_BATCHED_TOKENS=40960
++ LOGGER='["console","file"]'
++ '[' true = true ']'
++ LOGGER='["console","tensorboard","file"]'
++ PARQUET_ROOT=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl
++ '[' -z '' ']'
++ TRAIN_FILES=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/deepmath_filtered_level5_7/train.parquet
++ ensure_dataset_parquet train deepmath_filtered_level5_7 /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/deepmath_filtered_level5_7/train.parquet
++ local split=train
++ local dataset_name=deepmath_filtered_level5_7
++ local target_path=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/deepmath_filtered_level5_7/train.parquet
++ '[' -f /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/deepmath_filtered_level5_7/train.parquet ']'
++ return 0
++ '[' -z '' ']'
+++ normalize_dataset_spec amc23,aime24,aime25
+++ local spec=amc23,aime24,aime25
++++ echo amc23,aime24,aime25
++++ tr -d '[:space:]'
+++ spec=amc23,aime24,aime25
+++ spec=amc23,aime24,aime25
+++ spec=amc23,aime24,aime25
+++ [[ amc23,aime24,aime25 == *\,\,* ]]
+++ printf %s amc23,aime24,aime25
++ VAL_DATASET=amc23,aime24,aime25
+++ dataset_spec_key amc23,aime24,aime25
+++ local spec
++++ normalize_dataset_spec amc23,aime24,aime25
++++ local spec=amc23,aime24,aime25
+++++ echo amc23,aime24,aime25
+++++ tr -d '[:space:]'
++++ spec=amc23,aime24,aime25
++++ spec=amc23,aime24,aime25
++++ spec=amc23,aime24,aime25
++++ [[ amc23,aime24,aime25 == *\,\,* ]]
++++ printf %s amc23,aime24,aime25
+++ spec=amc23,aime24,aime25
+++ printf %s amc23+aime24+aime25
++ VAL_FILES=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/amc23+aime24+aime25/val.parquet
++ ensure_dataset_parquet val amc23,aime24,aime25 /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/amc23+aime24+aime25/val.parquet
++ local split=val
++ local dataset_name=amc23,aime24,aime25
++ local target_path=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/amc23+aime24+aime25/val.parquet
++ '[' -f /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/amc23+aime24+aime25/val.parquet ']'
++ return 0
+++ normalize_privileged_text_mode solution_answer
+++ local mode=solution_answer
++++ echo solution_answer
++++ tr - _
++++ tr '[:upper:]' '[:lower:]'
+++ mode=solution_answer
+++ case "$mode" in
+++ printf %s solution_answer
++ PRIVILEGED_TEXT_MODE=solution_answer
++ TEE_ARGS=()
++ RESUME_ARGS=()
++ '[' -n '' ']'
+++ date +%Y%m%d.%H%M%S
++ TS=20260702.055848
++ EXP=qwen3_1_7b_rlcsd_standard_16k_train_bench-20260702.055848
++ DIR=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848
++ mkdir -p /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848
++ cp /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/config.yaml
++ unset VERL_FILE_LOGGER_APPEND
++ mkdir -p /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848
+++ resolve_abs_path /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml
+++ python3 - /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml
+++ resolve_abs_path /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/config.yaml
+++ python3 - /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/config.yaml
++ '[' /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml '!=' /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/config.yaml ']'
++ cp /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/config.yaml
++ '[' true = true ']'
++ export TENSORBOARD_DIR=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/tensorboard_log/
++ TENSORBOARD_DIR=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/tensorboard_log/
++ echo 'TensorBoard log dir: /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/tensorboard_log/'
+TensorBoard log dir: /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/tensorboard_log/
++ export VERL_FILE_LOGGER_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/metrics.jsonl
++ VERL_FILE_LOGGER_PATH=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/metrics.jsonl
++ ALGO=
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y beta ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''beta'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y jsd_token_clip ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''jsd_token_clip'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y teacher_mode ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''teacher_mode'\'','\'''\''))'
++ val=snapshot
++ '[' -n snapshot ']'
++ '[' snapshot '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y full_logit_distill ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''full_logit_distill'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y distill_add_tail ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''distill_add_tail'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y alpha ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''alpha'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y top_k_distill ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''top_k_distill'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y is_clip ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''is_clip'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y ema_decay ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''ema_decay'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y epsilon ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''epsilon'\'','\'''\''))'
++ val=0.2
++ '[' -n 0.2 ']'
++ '[' 0.2 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y epsilon_w ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''epsilon_w'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y tau ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''tau'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y lam ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''lam'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y lam_decay_steps ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''lam_decay_steps'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y teacher_sync_interval ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''teacher_sync_interval'\'','\'''\''))'
++ val=10
++ '[' -n 10 ']'
++ '[' 10 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlcsd_tau ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlcsd_tau'\'','\'''\''))'
++ val=0.02
++ '[' -n 0.02 ']'
++ '[' 0.02 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlcsd_beta ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlcsd_beta'\'','\'''\''))'
++ val=1.0
++ '[' -n 1.0 ']'
++ '[' 1.0 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlcsd_lam ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlcsd_lam'\'','\'''\''))'
++ val=0.5
++ '[' -n 0.5 ']'
++ '[' 0.5 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlcsd_delta ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlcsd_delta'\'','\'''\''))'
++ val=0.02
++ '[' -n 0.02 ']'
++ '[' 0.02 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlcsd_eta ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlcsd_eta'\'','\'''\''))'
++ val=1.0
++ '[' -n 1.0 ']'
++ '[' 1.0 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_eta=1.0'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlcsd_residual_clip_low ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlcsd_residual_clip_low'\'','\'''\''))'
++ val=-2.0
++ '[' -n -2.0 ']'
++ '[' -2.0 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_eta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_low=-2.0'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlcsd_residual_clip_high ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlcsd_residual_clip_high'\'','\'''\''))'
++ val=2.0
++ '[' -n 2.0 ']'
++ '[' 2.0 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_eta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_low=-2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_high=2.0'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlcsd_k_max ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlcsd_k_max'\'','\'''\''))'
++ val=4
++ '[' -n 4 ']'
++ '[' 4 '!=' None ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_eta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_low=-2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_high=2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_k_max=4'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y opsd_ectr_alpha ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''opsd_ectr_alpha'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y opsd_ectr_log_w_floor ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''opsd_ectr_log_w_floor'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y opsd_ectr_cw_tau ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''opsd_ectr_cw_tau'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y rlsd_ectr_lam ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rlsd_ectr_lam'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in beta jsd_token_clip teacher_mode full_logit_distill distill_add_tail alpha top_k_distill is_clip ema_decay epsilon epsilon_w tau lam lam_decay_steps teacher_sync_interval rlcsd_tau rlcsd_beta rlcsd_lam rlcsd_delta rlcsd_eta rlcsd_residual_clip_low rlcsd_residual_clip_high rlcsd_k_max opsd_ectr_alpha opsd_ectr_log_w_floor opsd_ectr_cw_tau rlsd_ectr_lam srpo_beta
+++ Y srpo_beta ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''srpo_beta'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ '[' rlcsd '!=' grpo ']'
++ '[' rlcsd '!=' opd ']'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_eta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_low=-2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_high=2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_k_max=4 +actor_rollout_ref.rollout.custom.privileged_text_mode=solution_answer'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_eta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_low=-2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_high=2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_k_max=4 +actor_rollout_ref.rollout.custom.privileged_text_mode=solution_answer +actor_rollout_ref.rollout.custom.teacher_enable_thinking=True'
++ ALGO=' +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_eta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_low=-2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_high=2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_k_max=4 +actor_rollout_ref.rollout.custom.privileged_text_mode=solution_answer +actor_rollout_ref.rollout.custom.teacher_enable_thinking=True +actor_rollout_ref.rollout.custom.thinking_system_prompt=false'
++ DISTILL_ARGS=()
++ '[' rlcsd = opd ']'
++ ROLLOUT_CORR=
++ for key in rollout_is rollout_is_threshold rollout_is_batch_normalize rollout_rs rollout_rs_threshold
+++ Y rollout_is ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_is'\'','\'''\''))'
++ val=token
++ '[' -n token ']'
++ '[' token '!=' None ']'
++ ROLLOUT_CORR=' algorithm.rollout_correction.rollout_is=token'
++ for key in rollout_is rollout_is_threshold rollout_is_batch_normalize rollout_rs rollout_rs_threshold
+++ Y rollout_is_threshold ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_is_threshold'\'','\'''\''))'
++ val=2.0
++ '[' -n 2.0 ']'
++ '[' 2.0 '!=' None ']'
++ ROLLOUT_CORR=' algorithm.rollout_correction.rollout_is=token algorithm.rollout_correction.rollout_is_threshold=2.0'
++ for key in rollout_is rollout_is_threshold rollout_is_batch_normalize rollout_rs rollout_rs_threshold
+++ Y rollout_is_batch_normalize ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_is_batch_normalize'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in rollout_is rollout_is_threshold rollout_is_batch_normalize rollout_rs rollout_rs_threshold
+++ Y rollout_rs ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_rs'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ for key in rollout_is rollout_is_threshold rollout_is_batch_normalize rollout_rs rollout_rs_threshold
+++ Y rollout_rs_threshold ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''rollout_rs_threshold'\'','\'''\''))'
++ val=
++ '[' -n '' ']'
++ MODEL_OVERRIDE=
++ '[' -n '' ']'
++ '[' -n '' ']'
++ '[' -n '' ']'
++ '[' -n '' ']'
++ MAIN=src.self_distill_main
++ case "$METHOD" in
+++ Y use_legacy_worker_impl ''
+++ python3 -c 'import yaml; c=yaml.safe_load(open('\''/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/qwen3_1_7b_rlcsd_standard_16k_train_bench.yaml'\'')); print(c.get('\''use_legacy_worker_impl'\'','\'''\''))'
++ WORKER_IMPL=
++ '[' -z '' ']'
++ case "$METHOD" in
++ WORKER_IMPL=enable
++ tee /workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848/train_log.txt
+++ '[' -n 0 ']'
+++ '[' 0 '!=' None ']'
+++ echo 0
+++ case "$METHOD" in
+++ echo rlcsd
++ python3 -m src.self_distill_main algorithm.adv_estimator=grpo algorithm.use_kl_in_reward=False trainer.val_before_train=False trainer.use_legacy_worker_impl=enable trainer.critic_warmup=0 'trainer.logger=["console","tensorboard","file"]' trainer.project_name=rlcsd-qwen3_1_7b-math_deepmath trainer.experiment_name=qwen3_1_7b_rlcsd_standard_16k_train_bench-20260702.055848 trainer.default_local_dir=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/outputs/qwen3_1_7b_rlcsd_standard_16k_train_bench/20260702.055848 trainer.n_gpus_per_node=1 trainer.nnodes=1 trainer.save_freq=-1 trainer.test_freq=-1 trainer.total_epochs=1 data.train_files=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/deepmath_filtered_level5_7/train.parquet data.val_files=/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/amc23+aime24+aime25/val.parquet data.train_batch_size=8 data.val_batch_size=16 data.train_max_samples=8 data.max_prompt_length=2048 data.max_response_length=16384 +data.apply_chat_template_kwargs.enable_thinking=True +data.val_apply_chat_template_kwargs.enable_thinking=True +data.thinking_system_prompt=false data.filter_overlong_prompts=True data.truncation=error data.shuffle=False actor_rollout_ref.nccl_timeout=7200 actor_rollout_ref.model.path=Qwen/Qwen3-1.7B actor_rollout_ref.model.use_remove_padding=True actor_rollout_ref.model.enable_gradient_checkpointing=True actor_rollout_ref.model.lora.merge=False actor_rollout_ref.model.lora_rank=0 actor_rollout_ref.actor.optim.lr=1e-6 actor_rollout_ref.actor.optim.weight_decay=0.01 actor_rollout_ref.actor.optim.lr_warmup_steps=50 actor_rollout_ref.actor.grad_clip=1.0 actor_rollout_ref.actor.ppo_mini_batch_size=16 actor_rollout_ref.actor.ppo_micro_batch_size_per_gpu=4 actor_rollout_ref.actor.use_dynamic_bsz=True actor_rollout_ref.actor.ppo_max_token_len_per_gpu=40960 actor_rollout_ref.actor.use_kl_loss=True actor_rollout_ref.actor.kl_loss_coef=0 actor_rollout_ref.actor.kl_loss_type=low_var_kl actor_rollout_ref.actor.entropy_coeff=0 actor_rollout_ref.actor.strategy=fsdp2 actor_rollout_ref.actor.fsdp_config.model_dtype=bf16 actor_rollout_ref.actor.fsdp_config.param_offload=False actor_rollout_ref.actor.fsdp_config.optimizer_offload=False actor_rollout_ref.actor.policy_loss.loss_mode=rlcsd actor_rollout_ref.rollout.temperature=1.0 actor_rollout_ref.rollout.top_p=0.95 actor_rollout_ref.rollout.top_k=20 actor_rollout_ref.rollout.log_prob_use_dynamic_bsz=True actor_rollout_ref.rollout.log_prob_max_token_len_per_gpu=40960 actor_rollout_ref.rollout.tensor_model_parallel_size=1 actor_rollout_ref.rollout.name=vllm actor_rollout_ref.rollout.gpu_memory_utilization=0.6 actor_rollout_ref.rollout.n=8 actor_rollout_ref.rollout.load_format=safetensors actor_rollout_ref.rollout.layered_summon=True actor_rollout_ref.rollout.max_model_len=40960 actor_rollout_ref.rollout.max_num_batched_tokens=40960 +actor_rollout_ref.rollout.custom.val_response_length=38912 actor_rollout_ref.rollout.val_kwargs.n=12 actor_rollout_ref.rollout.val_kwargs.do_sample=True actor_rollout_ref.rollout.val_kwargs.temperature=0.6 actor_rollout_ref.rollout.val_kwargs.top_p=0.95 actor_rollout_ref.rollout.val_kwargs.top_k=20 actor_rollout_ref.ref.log_prob_use_dynamic_bsz=True actor_rollout_ref.ref.log_prob_max_token_len_per_gpu=40960 actor_rollout_ref.ref.fsdp_config.param_offload=True actor_rollout_ref.ref.strategy=fsdp2 actor_rollout_ref.ref.fsdp_config.model_dtype=bf16 reward.custom_reward_function.path=src/verl_reward.py reward.custom_reward_function.name=compute_score +actor_rollout_ref.actor.policy_loss.teacher_mode=snapshot +actor_rollout_ref.actor.policy_loss.epsilon=0.2 +actor_rollout_ref.actor.policy_loss.teacher_sync_interval=10 +actor_rollout_ref.actor.policy_loss.rlcsd_tau=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_beta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_lam=0.5 +actor_rollout_ref.actor.policy_loss.rlcsd_delta=0.02 +actor_rollout_ref.actor.policy_loss.rlcsd_eta=1.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_low=-2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_residual_clip_high=2.0 +actor_rollout_ref.actor.policy_loss.rlcsd_k_max=4 +actor_rollout_ref.rollout.custom.privileged_text_mode=solution_answer +actor_rollout_ref.rollout.custom.teacher_enable_thinking=True +actor_rollout_ref.rollout.custom.thinking_system_prompt=false algorithm.rollout_correction.rollout_is=token algorithm.rollout_correction.rollout_is_threshold=2.0
+/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/transformers/utils/hub.py:110: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/src/self_distill_main.py", line 36, in <module>
+    from verl.trainer.ppo.ray_trainer import RayPPOTrainer
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/trainer/ppo/ray_trainer.py", line 35, in <module>
+    from torchdata.stateful_dataloader import StatefulDataLoader
+ModuleNotFoundError: No module named 'torchdata'

@@ -1,0 +1,44 @@
+{
+  "summary": {
+    "backend": "FLASHINFER",
+    "speculative_json": "",
+    "dtype": "float16",
+    "num_measured_iters": 2,
+    "mean_gen_tok_s": 452.77147336110943,
+    "mean_elapsed_s": 289.489008393517,
+    "mean_generated_tokens": 131072.0,
+    "mean_prompt_tokens": 62.25
+  },
+  "records": [
+    {
+      "iter": 0,
+      "warmup": false,
+      "backend": "FLASHINFER",
+      "speculative_json": "",
+      "num_prompts": 8,
+      "prompt_tokens_sum": 498,
+      "prompt_tokens_mean": 62.25,
+      "generated_tokens": 131072,
+      "elapsed_s": 289.0060219030129,
+      "gen_tok_s": 453.5268820245769,
+      "dtype": "float16",
+      "max_prompt_tokens": 2048,
+      "max_new_tokens": 16384
+    },
+    {
+      "iter": 1,
+      "warmup": false,
+      "backend": "FLASHINFER",
+      "speculative_json": "",
+      "num_prompts": 8,
+      "prompt_tokens_sum": 498,
+      "prompt_tokens_mean": 62.25,
+      "generated_tokens": 131072,
+      "elapsed_s": 289.9719948840211,
+      "gen_tok_s": 452.016064697642,
+      "dtype": "float16",
+      "max_prompt_tokens": 2048,
+      "max_new_tokens": 16384
+    }
+  ]
+}

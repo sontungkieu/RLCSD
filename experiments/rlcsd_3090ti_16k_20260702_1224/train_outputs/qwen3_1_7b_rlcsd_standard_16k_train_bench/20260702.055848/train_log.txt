@@ -1,0 +1,10 @@
+/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/transformers/utils/hub.py:110: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/src/self_distill_main.py", line 36, in <module>
+    from verl.trainer.ppo.ray_trainer import RayPPOTrainer
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/trainer/ppo/ray_trainer.py", line 35, in <module>
+    from torchdata.stateful_dataloader import StatefulDataLoader
+ModuleNotFoundError: No module named 'torchdata'

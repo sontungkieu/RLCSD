@@ -1,0 +1,19 @@
+timestamp_utc=2026-07-02T06:37:22Z
+--- virtual try-on health ---
+{"status":"ok","device":"cuda:NVIDIA GeForce RTX 3090 Ti","models":{"idm_vton":"available; resident_worker=not_started; optimization=torch_compile","flux_refiner":"available","catvton":"unavailable: catvton.enabled is false; entrypoint not found: None","klein_tryon_lora":"unavailable: klein_tryon_lora.enabled is false","repair":"available"}}
+--- frontend ---
+HTTP/1.1 200 OK
+Vary: Origin
+Content-Type: text/html
+Cache-Control: no-cache
+Etag: W/"23c-v2IZHHmrLZAyMOs6Nrd8Pw9di7U"
+--- gpu ---
+0, NVIDIA GeForce RTX 3090 Ti, 4, 24564, 0
+--- benchmark paths ---
+removed /workspace/rlcsd_3090ti_16k_20260702_1224
+removed /workspace/rt16k1224
+removed /workspace/tmp16k1224
+--- residual processes ---
+--- listeners ---
+LISTEN 0      511          0.0.0.0:8080       0.0.0.0:*    users:(("node",pid=1002,fd=19))    
+LISTEN 0      2048         0.0.0.0:8000       0.0.0.0:*    users:(("uvicorn",pid=49025,fd=11))

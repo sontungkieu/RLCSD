@@ -1,0 +1,3 @@
+/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/.cache/huggingface/.gitignore 1 bytes
+/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/amc23+aime24+aime25/val.parquet 105032 bytes
+/workspace/rlcsd_3090ti_16k_20260702_1224/runtime/data/verl/deepmath_filtered_level5_7/train.parquet 1031585556 bytes

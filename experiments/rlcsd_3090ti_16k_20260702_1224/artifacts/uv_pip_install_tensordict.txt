@@ -1,0 +1,12 @@
+Using Python 3.11.10 environment at: /workspace/rlcsd_3090ti_16k_20260702_1224/.venv
+Resolved 33 packages in 307ms
+Prepared 5 packages in 83ms
+warning: Failed to hardlink files; falling back to full copy. This may lead to degraded performance.
+         If the cache and target directories are on different filesystems, hardlinking may not be supported.
+         If this is intentional, set `export UV_LINK_MODE=copy` or use `--link-mode=copy` to suppress this warning.
+Installed 5 packages in 15ms
+ + importlib-metadata==9.0.0
+ + orjson==3.11.9
+ + pyvers==0.2.2
+ + tensordict==0.13.0
+ + zipp==4.1.0

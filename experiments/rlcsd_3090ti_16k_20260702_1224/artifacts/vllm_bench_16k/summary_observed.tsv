@@ -1,0 +1,3 @@
+name	requested_backend	observed_backend	mean_gen_tok_s	mean_elapsed_s	mean_generated_tokens	exit_code
+flash_attn_16k_fp16	FLASH_ATTN	FLASH_ATTN	456.09377701173827	287.38684946647845	131072.0	0
+flashinfer_16k_fp16	FLASHINFER	FLASH_ATTN	452.77147336110943	289.489008393517	131072.0	0

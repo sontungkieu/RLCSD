@@ -1,0 +1,3 @@
+/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/workers/engine/mindspeed/transformer_impl.py:24: UserWarning: NPU not support router replay for now.
+  from verl.utils.megatron.router_replay_patch import RouterReplay
+self_distill_main import ok

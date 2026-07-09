@@ -1,0 +1,17 @@
+run_id=rlcsd_3090ti_16k_20260702_1224
+timestamp=2026-07-02T05:22:37+00:00
+hostname=567617d19795
+tryon_before
+{"status":"ok","device":"cuda:NVIDIA GeForce RTX 3090 Ti","models":{"idm_vton":"available; resident_worker=not_started; optimization=torch_compile","flux_refiner":"available","catvton":"unavailable: catvton.enabled is false; entrypoint not found: None","klein_tryon_lora":"unavailable: klein_tryon_lora.enabled is false","repair":"available"}}
+processes_before
+root        1001     986  0 Jul01 ?        00:00:00 sh -c vite --host 0.0.0.0 --port 5173 --host 0.0.0.0 --port 8080
+root        1002    1001  0 Jul01 ?        00:00:08 node /workspace/Project_Phase2/virtual_tryon/frontend/node_modules/.bin/vite --host 0.0.0.0 --port 5173 --host 0.0.0.0 --port 8080
+root        1013    1002  0 Jul01 ?        00:00:22 /workspace/Project_Phase2/virtual_tryon/frontend/node_modules/@esbuild/linux-x64/bin/esbuild --service=0.21.5 --ping
+root       38207       1  1 05:14 ?        00:00:07 /workspace/venvs/project_phase2/bin/python /workspace/venvs/project_phase2/bin/uvicorn app.main:app --host 0.0.0.0 --port 8000
+root       38335   38332  0 05:22 ?        00:00:00 tee /workspace/rlcsd_3090ti_16k_20260702_1224/artifacts/remote_state_before.txt
+gpu_before
+NVIDIA GeForce RTX 3090 Ti, 6 MiB, 24564 MiB, 0 %, 580.65.06
+disk_before
+Filesystem     Type     Size  Used Avail Use% Mounted on
+overlay        overlay   60G   28G   33G  47% /
+/dev/nvme0n1p3 xfs      250G  126G  125G  51% /workspace

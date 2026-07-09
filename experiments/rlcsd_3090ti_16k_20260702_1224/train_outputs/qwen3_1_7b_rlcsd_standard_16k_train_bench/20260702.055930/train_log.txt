@@ -1,0 +1,25 @@
+/workspace/rlcsd_3090ti_16k_20260702_1224/.venv/lib/python3.11/site-packages/transformers/utils/hub.py:110: FutureWarning: Using `TRANSFORMERS_CACHE` is deprecated and will be removed in v5 of Transformers. Use `HF_HOME` instead.
+  warnings.warn(
+Traceback (most recent call last):
+  File "<frozen runpy>", line 198, in _run_module_as_main
+  File "<frozen runpy>", line 88, in _run_code
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/src/self_distill_main.py", line 36, in <module>
+    from verl.trainer.ppo.ray_trainer import RayPPOTrainer
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/trainer/ppo/ray_trainer.py", line 44, in <module>
+    from verl.trainer.distillation.losses import is_distillation_enabled
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/trainer/distillation/__init__.py", line 14, in <module>
+    from .losses import *  # noqa: F401, E402
+    ^^^^^^^^^^^^^^^^^^^^^
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/trainer/distillation/losses.py", line 22, in <module>
+    from verl.trainer.ppo.core_algos import agg_loss, get_policy_loss_fn, kl_penalty
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/trainer/ppo/core_algos.py", line 36, in <module>
+    from verl.workers.config import ActorConfig
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/workers/config/__init__.py", line 15, in <module>
+    from . import actor, critic, engine, model, optimizer, reward, rollout
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/workers/config/actor.py", line 22, in <module>
+    from verl.utils.profiler.config import ProfilerConfig
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/utils/profiler/__init__.py", line 18, in <module>
+    from .performance import GPUMemoryLogger, log_gpu_memory_usage, simple_timer
+  File "/workspace/rlcsd_3090ti_16k_20260702_1224/repo/third_party/verl/verl/utils/profiler/performance.py", line 23, in <module>
+    from codetiming import Timer
+ModuleNotFoundError: No module named 'codetiming'
