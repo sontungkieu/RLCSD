@@ -109,7 +109,13 @@ TOP_P=$(Y top_p 0.95)
 TOP_K=$(Y top_k_sampling 20)
 GPU_MEM=$(Y vllm_gpu_memory_utilization 0.6)
 TP=$(Y vllm_tensor_parallel_size 2)
+VLLM_MAX_NUM_SEQS=$(Y vllm_max_num_seqs "")
+ROLLOUT_AGENT_NUM_WORKERS=$(Y rollout_agent_num_workers "")
+REWARD_NUM_WORKERS=$(Y reward_num_workers "")
 VLLM_ATTENTION_BACKEND=$(Y vllm_attention_backend "${VLLM_ATTENTION_BACKEND:-FLASH_ATTN}")
+W4_SELF_SPECULATIVE=$(Y w4_self_speculative false)
+W4_NUM_SPECULATIVE_TOKENS=$(Y w4_num_speculative_tokens 3)
+W4_GROUP_SIZE=$(Y w4_group_size 128)
 STUDENT_ENABLE_THINKING=$(Y student_enable_thinking false)
 VAL_ENABLE_THINKING=$(Y val_enable_thinking true)
 VAL_DO_SAMPLE=$(Y val_do_sample true)
@@ -166,6 +172,7 @@ RESUME_DIR=""
 USE_LORA_LOWER=$(echo "$USE_LORA" | tr '[:upper:]' '[:lower:]')
 USE_CUSTOM_REWARD_FUNCTION_LOWER=$(echo "$USE_CUSTOM_REWARD_FUNCTION" | tr '[:upper:]' '[:lower:]')
 USE_TENSORBOARD_LOWER=$(echo "$USE_TENSORBOARD" | tr '[:upper:]' '[:lower:]')
+W4_SELF_SPECULATIVE_LOWER=$(echo "$W4_SELF_SPECULATIVE" | tr '[:upper:]' '[:lower:]')
 
 case "$METHOD" in
     grpo|opd|opsd|opsd_ectr|sdpo|rlsd|rlsd_ectr|srpo|rlcsd)
@@ -291,6 +298,56 @@ fi
 if [ "$TP" -gt "$N_GPUS_PER_NODE" ]; then
     echo "vllm_tensor_parallel_size (${TP}) cannot exceed n_gpus_per_node (${N_GPUS_PER_NODE})" >&2
     exit 1
+fi
+
+W4_ARGS=()
+if [ "$W4_SELF_SPECULATIVE_LOWER" = "true" ]; then
+    if [ "$W4_NUM_SPECULATIVE_TOKENS" -lt 1 ]; then
+        echo "w4_num_speculative_tokens must be at least 1" >&2
+        exit 1
+    fi
+    case "$W4_GROUP_SIZE" in
+        32|64|128) ;;
+        *)
+            echo "w4_group_size must be 32, 64, or 128" >&2
+            exit 1
+            ;;
+    esac
+    export RLCSD_W4_GROUP_SIZE="$W4_GROUP_SIZE"
+    W4_ARGS=(
+        +actor_rollout_ref.rollout.engine_kwargs.vllm.spec_method=custom_class
+        +actor_rollout_ref.rollout.engine_kwargs.vllm.spec_model=src.w4_self_speculative.W4SelfSpeculativeProposer
+        +actor_rollout_ref.rollout.engine_kwargs.vllm.spec_tokens=${W4_NUM_SPECULATIVE_TOKENS}
+    )
+else
+    unset RLCSD_W4_GROUP_SIZE
+fi
+
+VLLM_SCHEDULER_ARGS=()
+if [ -n "$VLLM_MAX_NUM_SEQS" ] && [ "$VLLM_MAX_NUM_SEQS" != "None" ]; then
+    if ! [[ "$VLLM_MAX_NUM_SEQS" =~ ^[1-9][0-9]*$ ]]; then
+        echo "vllm_max_num_seqs must be a positive integer" >&2
+        exit 1
+    fi
+    VLLM_SCHEDULER_ARGS=(actor_rollout_ref.rollout.max_num_seqs=${VLLM_MAX_NUM_SEQS})
+fi
+
+ROLLOUT_AGENT_ARGS=()
+if [ -n "$ROLLOUT_AGENT_NUM_WORKERS" ] && [ "$ROLLOUT_AGENT_NUM_WORKERS" != "None" ]; then
+    if ! [[ "$ROLLOUT_AGENT_NUM_WORKERS" =~ ^[1-9][0-9]*$ ]]; then
+        echo "rollout_agent_num_workers must be a positive integer" >&2
+        exit 1
+    fi
+    ROLLOUT_AGENT_ARGS=(actor_rollout_ref.rollout.agent.num_workers=${ROLLOUT_AGENT_NUM_WORKERS})
+fi
+
+REWARD_WORKER_ARGS=()
+if [ -n "$REWARD_NUM_WORKERS" ] && [ "$REWARD_NUM_WORKERS" != "None" ]; then
+    if ! [[ "$REWARD_NUM_WORKERS" =~ ^[1-9][0-9]*$ ]]; then
+        echo "reward_num_workers must be a positive integer" >&2
+        exit 1
+    fi
+    REWARD_WORKER_ARGS=(reward.num_workers=${REWARD_NUM_WORKERS})
 fi
 if [ $((N_GPUS_PER_NODE % TP)) -ne 0 ]; then
     echo "n_gpus_per_node (${N_GPUS_PER_NODE}) must be divisible by vllm_tensor_parallel_size (${TP})" >&2
@@ -585,6 +642,9 @@ python3 -m $MAIN \
     actor_rollout_ref.rollout.layered_summon=True \
     actor_rollout_ref.rollout.max_model_len=${ROLLOUT_MAX_MODEL_LEN} \
     actor_rollout_ref.rollout.max_num_batched_tokens=${ROLLOUT_MAX_BATCHED_TOKENS} \
+    "${VLLM_SCHEDULER_ARGS[@]}" \
+    "${ROLLOUT_AGENT_ARGS[@]}" \
+    "${W4_ARGS[@]}" \
     +actor_rollout_ref.rollout.custom.val_response_length=${VAL_MAX_RESP} \
     actor_rollout_ref.rollout.val_kwargs.n=${VAL_N} \
     actor_rollout_ref.rollout.val_kwargs.do_sample=${VAL_DO_SAMPLE} \
@@ -596,6 +656,7 @@ python3 -m $MAIN \
     actor_rollout_ref.ref.fsdp_config.param_offload=True \
     actor_rollout_ref.ref.strategy=fsdp2 \
     actor_rollout_ref.ref.fsdp_config.model_dtype=bf16 \
+    "${REWARD_WORKER_ARGS[@]}" \
     "${REWARD_ARGS[@]}" \
     ${MODEL_OVERRIDE} \
     ${ALGO} \

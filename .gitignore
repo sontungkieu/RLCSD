@@ -10,6 +10,8 @@ outputs/
 checkpoints/
 tensorboard_log/
 remote_artifacts/
+wheelhouse/*
+!wheelhouse/.gitkeep
 *.log
 *.zip*
 

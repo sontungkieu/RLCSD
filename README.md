@@ -131,6 +131,7 @@ build targets both B200/GB200 (`sm_100`) and RTX 50-series smoke-test hosts
 
 ```bash
 export TORCH_CUDA_ARCH_LIST="10.0;12.0+PTX"
+export FLASH_ATTN_CUDA_ARCHS="100;120"
 export CUDAARCHS="100;120"
 export CMAKE_CUDA_ARCHITECTURES="100;120"
 export MAX_JOBS=4
@@ -142,10 +143,34 @@ The script builds `docker/Dockerfile.rlc-runtime`, runs
 `docker/smoke_test.py` with `--gpus all`, and pushes the image tag. It assumes
 the Docker host is already logged in to the target registry. Keep `MAX_JOBS`
 low on small Vast instances because CUDA extension builds can exhaust RAM.
-`INSTALL_FLASH_ATTN=0` uses the SDPA fallback path; set it to `1` only on a
-builder with enough RAM for source-building Blackwell CUDA extensions.
-`.dockerignore` keeps `.env`, `data/`, `outputs/`, and archived experiment
-artifacts out of the image.
+`INSTALL_FLASH_ATTN=0` uses the SDPA fallback path. Set it to `wheel` after a
+prebuilt `flash_attn*.whl` has been downloaded into `wheelhouse/`. Set it to
+`1` only on a builder with enough RAM for source-building Blackwell CUDA
+extensions inline. `.dockerignore` keeps `.env`, `data/`, `outputs/`, and
+archived experiment artifacts out of the image.
+
+To build the FlashAttention wheel separately on Modal and keep the Docker build
+fast/reproducible:
+
+```bash
+export TORCH_CUDA_ARCH_LIST="10.0"
+export FLASH_ATTN_CUDA_ARCHS="100"
+export CUDAARCHS="100"
+export CMAKE_CUDA_ARCHITECTURES="100"
+export MAX_JOBS=8
+export NVCC_THREADS=1
+uvx --from modal modal run --detach --timestamps docker/modal_flash_attn_wheel.py::build_wheel
+
+bash docker/download_flash_attn_wheel.sh
+
+export INSTALL_FLASH_ATTN=wheel
+bash docker/build_push.sh codemaivanngu/rlcsd:b200-cu13-vllm024-sm100-fa
+```
+
+The Modal wheel builder defaults to CPU build resources (`16` CPU cores and
+`64GB` RAM). To use a cheaper GPU builder while still targeting B200 kernels,
+set `RLCSD_MODAL_WHEEL_GPU=L4` or another Modal GPU type; the output architecture
+is controlled by `FLASH_ATTN_CUDA_ARCHS`, not by the builder GPU.
 
 To run a constrained Qwen3-1.7B RLCSD mini-epoch inside the built image:
 
@@ -195,8 +220,56 @@ If no Docker host is available, Modal can build the same Dockerfile for a direct
 B200 smoke or mini-epoch test without pushing to DockerHub:
 
 ```bash
+export INSTALL_FLASH_ATTN=wheel
+export FLASH_ATTN_CUDA_ARCHS="100"
+export TORCH_CUDA_ARCH_LIST="10.0"
+export CUDAARCHS="100"
+export CMAKE_CUDA_ARCHITECTURES="100"
+
 uvx --from modal modal run docker/modal_build_smoke.py::smoke
 uvx --from modal modal run docker/modal_build_smoke.py::mini_epoch
+```
+
+### Experimental W4 self-speculative rollout
+
+The CUDA 13 image installs a narrow compatibility hook for vLLM `0.24.0` that
+lets `src.w4_self_speculative.W4SelfSpeculativeProposer` use vLLM's native
+draft-model scheduler. The BF16 actor remains the verifier; the proposer keeps
+a separate RTN W4 AutoAWQ copy and refreshes it after every complete actor
+weight transfer. This preserves exact target sampling while making acceptance
+rate and refresh cost the deciding performance factors.
+
+The W4 experiment keeps the original Qwen3-1.7B RLCSD training values and adds
+only speculative-decoding controls:
+
+```bash
+bash scripts/math_deepmath/run_qwen3_1_7b_rlcsd_w4.sh
+```
+
+The defaults are three proposed tokens and group size 128. Override either at
+launch time without editing the baseline config:
+
+```bash
+bash scripts/math_deepmath/run_qwen3_1_7b_rlcsd_w4.sh \
+  w4_num_speculative_tokens=2 w4_group_size=128
+```
+
+The implementation intentionally fails the image build when the installed
+vLLM version or `gpu_model_runner.py` layout differs from `0.24.0`. W4 refresh
+time is emitted as `RLCSD_W4_REFRESH seconds=<value>` in the worker log.
+Run the short Qwen3-1.7B load/generation probe before starting training:
+
+```bash
+RLCSD_MODAL_TASK=w4_probe RLCSD_MODAL_GPU=B200 \
+  uvx --from modal modal run docker/modal_build_smoke.py
+```
+
+Then run the one-step integration smoke. It requires a real RLCSD actor update
+and verifies that the W4 drafter refreshes after the optimizer step:
+
+```bash
+RLCSD_MODAL_TASK=w4_train_smoke RLCSD_MODAL_GPU=B200 \
+  uvx --from modal modal run docker/modal_build_smoke.py
 ```
 
 ## Data

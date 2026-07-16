@@ -5,6 +5,7 @@ IMAGE="${1:-codemaivanngu/rlcsd:b200-cu13-vllm024-sm100-sm120}"
 
 docker build \
   --platform linux/amd64 \
+  --build-arg FLASH_ATTN_CUDA_ARCHS="${FLASH_ATTN_CUDA_ARCHS:-100;120}" \
   --build-arg TORCH_CUDA_ARCH_LIST="${TORCH_CUDA_ARCH_LIST:-10.0;12.0+PTX}" \
   --build-arg CUDAARCHS="${CUDAARCHS:-100;120}" \
   --build-arg CMAKE_CUDA_ARCHITECTURES="${CMAKE_CUDA_ARCHITECTURES:-100;120}" \

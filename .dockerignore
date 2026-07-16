@@ -5,6 +5,10 @@
 .ssh/
 .modal.toml
 .docker/
+.agents/
+.codex/
+remote_artifacts/
+VDT presentation/
 __pycache__/
 *.py[cod]
 .pytest_cache/

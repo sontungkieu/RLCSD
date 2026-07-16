@@ -239,6 +239,19 @@ class vLLMColocateWorkerExtension:
             model_config = self.model_runner.vllm_config.model_config
             process_weights_after_loading(model, model_config, self.device)
 
+        drafter = getattr(self.model_runner, "drafter", None)
+        refresh_w4 = getattr(drafter, "refresh_from_target", None)
+        if callable(refresh_w4):
+            self._last_w4_refresh_seconds = refresh_w4()
+            logger.info(
+                "W4 self-drafter refresh completed in %.3fs",
+                self._last_w4_refresh_seconds,
+            )
+            print(
+                f"RLCSD_W4_REFRESH seconds={self._last_w4_refresh_seconds:.3f}",
+                flush=True,
+            )
+
     def _update_weights(self, weights: list[tuple[str, torch.Tensor]], peft_config: dict, base_sync_done: bool):
         if peft_config and base_sync_done:
             weights = dict(weights)

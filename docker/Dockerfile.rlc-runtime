@@ -2,6 +2,7 @@
 FROM nvidia/cuda:13.0.2-devel-ubuntu22.04
 
 ARG DEBIAN_FRONTEND=noninteractive
+ARG FLASH_ATTN_CUDA_ARCHS="100;120"
 ARG TORCH_CUDA_ARCH_LIST="10.0;12.0+PTX"
 ARG CUDAARCHS="100;120"
 ARG CMAKE_CUDA_ARCHITECTURES="100;120"
@@ -11,6 +12,7 @@ ARG INSTALL_FLASH_ATTN=0
 ENV CUDA_HOME=/usr/local/cuda \
     PATH=/usr/local/cuda/bin:${PATH} \
     LD_LIBRARY_PATH=/usr/local/cuda/lib64:${LD_LIBRARY_PATH} \
+    FLASH_ATTN_CUDA_ARCHS=${FLASH_ATTN_CUDA_ARCHS} \
     TORCH_CUDA_ARCH_LIST=${TORCH_CUDA_ARCH_LIST} \
     CUDAARCHS=${CUDAARCHS} \
     CMAKE_CUDA_ARCHITECTURES=${CMAKE_CUDA_ARCHITECTURES} \
@@ -53,10 +55,20 @@ RUN python3 -m pip install --upgrade pip setuptools wheel packaging pybind11 nin
 COPY docker/requirements-cu13.txt /tmp/requirements-cu13.txt
 RUN uv pip install --system -r /tmp/requirements-cu13.txt
 
+COPY wheelhouse/ /tmp/rlcsd-wheelhouse/
+
 # Building flash-attn for new Blackwell archs can be slow or memory hungry.
-# The default runtime uses the repo SDPA fallback; opt in when the builder has
-# enough RAM and a matching CUDA toolchain.
-RUN if [ "${INSTALL_FLASH_ATTN}" = "1" ]; then \
+# The default runtime uses the repo SDPA fallback. Set INSTALL_FLASH_ATTN=wheel
+# after downloading a prebuilt wheel into wheelhouse/, or set it to 1 to source
+# build inline when the builder has enough RAM and a matching CUDA toolchain.
+RUN if [ "${INSTALL_FLASH_ATTN}" = "wheel" ]; then \
+        wheel="$(find /tmp/rlcsd-wheelhouse -maxdepth 2 -type f -name 'flash_attn*.whl' | sort | tail -n 1)"; \
+        if [ -z "${wheel}" ]; then \
+            echo "INSTALL_FLASH_ATTN=wheel but no flash_attn*.whl found in wheelhouse/" >&2; \
+            exit 1; \
+        fi; \
+        uv pip install --system --no-deps "${wheel}"; \
+    elif [ "${INSTALL_FLASH_ATTN}" = "1" ]; then \
         FLASH_ATTENTION_FORCE_BUILD=TRUE uv pip install --system --no-build-isolation flash-attn==2.8.3.post1; \
     fi
 
@@ -64,6 +76,8 @@ RUN ln -sf /usr/bin/python3 /usr/local/bin/python
 
 WORKDIR /workspace/RLCSD
 COPY . /workspace/RLCSD
+RUN python3 docker/apply_vllm_w4_patch.py \
+    && python3 docker/apply_vllm_w4_patch.py --check
 
 ENV PYTHONPATH=/workspace/RLCSD/third_party/verl:/workspace/RLCSD:${PYTHONPATH}
 
