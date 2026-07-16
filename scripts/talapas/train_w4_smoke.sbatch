@@ -123,16 +123,20 @@ from pathlib import Path
 
 metrics_path = Path(sys.argv[1])
 summary_path = Path(sys.argv[2])
-rows = [json.loads(line) for line in metrics_path.read_text().splitlines() if line]
-if not rows:
+records = [json.loads(line) for line in metrics_path.read_text().splitlines() if line]
+if not records:
     raise SystemExit("metrics.jsonl is empty")
+rows = [record.get("data", record) for record in records]
 
 def mean(key):
     values = [float(row[key]) for row in rows if key in row]
     return statistics.fmean(values) if values else None
 
 summary = {
-    "steps": [row.get("training/global_step") for row in rows],
+    "steps": [
+        row.get("training/global_step", record.get("step"))
+        for record, row in zip(records, rows, strict=True)
+    ],
     "step_count": len(rows),
     "mean_step_s": mean("timing_s/step"),
     "mean_gen_s": mean("timing_s/gen"),
