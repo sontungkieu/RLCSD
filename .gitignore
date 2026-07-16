@@ -19,6 +19,7 @@ wheelhouse/*
 .env
 *.env
 .venv/
+.talapas/
 .agents/
 skills-lock.json
 .idea/

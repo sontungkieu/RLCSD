@@ -272,6 +272,20 @@ RLCSD_MODAL_TASK=w4_train_smoke RLCSD_MODAL_GPU=B200 \
   uvx --from modal modal run docker/modal_build_smoke.py
 ```
 
+### Talapas A100 smoke
+
+The Talapas workflow builds a CUDA 13 `uv` environment and FlashAttention
+`sm_80` wheel on an A100 allocation, archives the environment on GPFS, and
+stages it back to node-local `/tmp` for training. Submit environment setup and
+the dependent three-epoch W4 checkpoint smoke from the Talapas clone:
+
+```bash
+bash scripts/talapas/submit_w4_smoke.sh
+```
+
+Paths, resource defaults, output contracts, and monitoring commands are in
+[`info-talapas.md`](info-talapas.md).
+
 ## Data
 
 Training and eval parquets live at
