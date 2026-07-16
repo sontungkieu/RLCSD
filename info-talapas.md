@@ -24,6 +24,7 @@ mode where CUDA PyTorch imports directly from a GPFS virtual environment stall.
 - Partition: `gpu`
 - GRES: `gpu:nvidia_a100_80gb_pcie_3g.40gb:1`
 - CUDA module: `cuda/13.0`
+- Compiler module: `gcc/13.1.0`
 - Python: `3.10`, managed by `uv`
 - vLLM: `0.24.0`
 - FlashAttention: `2.8.3.post1`, compiled for `sm_80`

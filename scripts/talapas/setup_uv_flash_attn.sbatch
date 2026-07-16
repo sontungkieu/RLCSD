@@ -18,10 +18,14 @@ UV_CACHE_DIR="${SCRATCH_ROOT}/uv-cache"
 
 source /etc/profile.d/modules.sh
 module purge
+module load gcc/13.1.0
 module load cuda/13.0
 
 CUDA_HOME=$(dirname "$(dirname "$(command -v nvcc)")")
-export CUDA_HOME
+CC=$(command -v gcc)
+CXX=$(command -v g++)
+export CUDA_HOME CC CXX
+export CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER=${CC}
 export PATH="${CUDA_HOME}/bin:${PATH}"
 export LD_LIBRARY_PATH="${CUDA_HOME}/lib64:${LD_LIBRARY_PATH:-}"
 export FLASH_ATTENTION_FORCE_BUILD=TRUE
