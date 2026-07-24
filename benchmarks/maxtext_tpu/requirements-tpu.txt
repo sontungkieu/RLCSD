@@ -1,0 +1,7 @@
+# The exact Tunix commit contains MaxTextPipelineConfig and mesh validation.
+google-tunix @ git+https://github.com/sontungkieu/tunix.git@50f5752a17edec56e2aa30aabfc03859949adf6f
+maxtext[tpu]==0.2.3
+pyarrow>=24.0.0
+psutil
+torch
+transformers
