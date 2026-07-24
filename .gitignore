@@ -10,6 +10,7 @@ outputs/
 checkpoints/
 tensorboard_log/
 remote_artifacts/
+benchmarks/maxtext_tpu/outputs/
 *.log
 *.zip*
 

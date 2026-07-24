@@ -106,6 +106,15 @@ assets/                    Figures from the paper used in this README
 requirements.txt
 ```
 
+### Experimental Tunix/MaxText TPU backend
+
+An evidence-gated TPU v5e-8 integration is under
+[`benchmarks/maxtext_tpu`](benchmarks/maxtext_tpu/README.md). It provides the
+18-case Qwen3 PP/TP matrix, checkpoint conversion and logits parity, a
+full-sequence forward benchmark, a forward/backward/AdamW core-step benchmark,
+and a JAX port of the RLCSD policy-loss kernel. Decode/KV-cache and end-to-end
+RLCSD remain explicitly unsupported until their runtime gates are implemented.
+
 ## Install
 
 A few practical notes:
