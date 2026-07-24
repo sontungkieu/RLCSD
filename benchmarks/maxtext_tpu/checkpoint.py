@@ -3,14 +3,17 @@
 from __future__ import annotations
 
 import argparse
+import contextlib
 import hashlib
 import json
 import os
 import shlex
 import subprocess
 import sys
+import tempfile
 import time
 from pathlib import Path
+from typing import Iterator
 
 from benchmarks.maxtext_tpu.matrix import get_case
 
@@ -36,6 +39,12 @@ TPU_RUNTIME_ENV_KEYS = {
     "TPU_WORKER_ID",
     "XRT_TPU_CONFIG",
 }
+
+LIBTPU_IMPORT_BLOCKER_SOURCE = """\
+raise ImportError(
+    "libtpu is intentionally unavailable during CPU-only checkpoint conversion"
+)
+"""
 
 
 def _cpu_only_environment(
@@ -85,6 +94,47 @@ def _activate_cpu_only_environment(
     for key in (*CPU_ONLY_ENV_OVERRIDES, "XLA_FLAGS"):
         os.environ[key] = environment[key]
     return environment
+
+
+@contextlib.contextmanager
+def _block_libtpu_import(
+    environment: dict[str, str],
+) -> Iterator[dict[str, str]]:
+    """Hide installed libtpu from the CPU-only conversion process.
+
+    Recent JAX versions discover Cloud TPU from the device plus the installed
+    ``libtpu`` module, even after TPU environment variables are removed and
+    ``JAX_PLATFORMS=cpu`` is set.  A leading import blocker makes JAX's
+    optional ``import libtpu`` take its supported ImportError path without
+    changing the TPU environment used by later parity and training processes.
+    """
+
+    if "libtpu" in sys.modules:
+        raise RuntimeError(
+            "libtpu was imported before CPU checkpoint isolation"
+        )
+
+    with tempfile.TemporaryDirectory(prefix="rlcsd-cpu-libtpu-block-") as temp:
+        blocker_dir = Path(temp)
+        (blocker_dir / "libtpu.py").write_text(
+            LIBTPU_IMPORT_BLOCKER_SOURCE,
+            encoding="utf-8",
+        )
+        blocker_path = str(blocker_dir)
+        child_environment = dict(environment)
+        inherited_pythonpath = child_environment.get("PYTHONPATH", "")
+        child_environment["PYTHONPATH"] = os.pathsep.join(
+            part
+            for part in (blocker_path, inherited_pythonpath)
+            if part
+        )
+        child_environment["RLCSD_LIBTPU_IMPORT_BLOCKED"] = "1"
+        sys.path.insert(0, blocker_path)
+        try:
+            yield child_environment
+        finally:
+            if blocker_path in sys.path:
+                sys.path.remove(blocker_path)
 
 
 def _resolve_revision(model_id: str, requested_revision: str) -> str:
@@ -156,27 +206,29 @@ def main() -> None:
     command: list[str] = []
     if not args.reuse:
         output_dir.mkdir(parents=True, exist_ok=True)
-        command = [
-            sys.executable,
-            "-X",
-            "faulthandler",
-            "-m",
-            "maxtext.checkpoint_conversion.to_maxtext",
-            str(_maxtext_base_config()),
-            f"model_name={case.model.model_id.rsplit('/', 1)[-1].lower()}",
-            f"base_output_directory={output_dir}",
-            "hardware=cpu",
-            "scan_layers=false",
-            "use_multimodal=false",
-            "skip_jax_distributed_system=true",
-            "--lazy_load_tensors=true",
-            f"--simulated_cpu_devices_count={args.simulated_cpu_devices}",
-            f"--hf_model_path={case.model.model_id}",
-            f"--revision={resolved_revision}",
-            "--save_dtype=bfloat16",
-        ]
-        # Authentication remains in the environment; it is never serialized.
-        subprocess.run(command, env=conversion_env, check=True)
+        with _block_libtpu_import(conversion_env) as blocked_env:
+            command = [
+                sys.executable,
+                "-X",
+                "faulthandler",
+                "-m",
+                "maxtext.checkpoint_conversion.to_maxtext",
+                str(_maxtext_base_config()),
+                f"model_name={case.model.model_id.rsplit('/', 1)[-1].lower()}",
+                f"base_output_directory={output_dir}",
+                "hardware=cpu",
+                "scan_layers=false",
+                "use_multimodal=false",
+                "skip_jax_distributed_system=true",
+                "--lazy_load_tensors=true",
+                f"--simulated_cpu_devices_count={args.simulated_cpu_devices}",
+                f"--hf_model_path={case.model.model_id}",
+                f"--revision={resolved_revision}",
+                "--save_dtype=bfloat16",
+            ]
+            # Authentication remains in the environment; it is never
+            # serialized. The libtpu blocker is scoped to conversion only.
+            subprocess.run(command, env=blocked_env, check=True)
 
     if not items_dir.is_dir():
         raise FileNotFoundError(
@@ -205,6 +257,7 @@ def main() -> None:
             "jax_platforms": conversion_env.get("JAX_PLATFORMS", "cpu"),
             "pjrt_device": conversion_env.get("PJRT_DEVICE", "CPU"),
             "xla_flags": conversion_env["XLA_FLAGS"],
+            "libtpu_import_blocked": not args.reuse,
             "tpu_runtime_keys_present": sorted(
                 key
                 for key in TPU_RUNTIME_ENV_KEYS

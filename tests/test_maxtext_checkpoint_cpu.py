@@ -1,6 +1,11 @@
 from __future__ import annotations
 
+import importlib
 import json
+import os
+import sys
+
+import pytest
 
 from benchmarks.maxtext_tpu import checkpoint
 
@@ -57,6 +62,7 @@ def test_checkpoint_cli_forces_outer_process_to_cpu_before_resolution(
     assert runtime_environment["xla_flags"].endswith(
         "--xla_force_host_platform_device_count=16"
     )
+    assert runtime_environment["libtpu_import_blocked"] is False
     assert runtime_environment["tpu_runtime_keys_present"] == []
 
 
@@ -89,6 +95,32 @@ def test_checkpoint_cpu_environment_overrides_inherited_tpu_without_mutation():
     assert inherited["PJRT_DEVICE"] == "TPU"
     assert inherited["TPU_ACCELERATOR_TYPE"] == "v5litepod-8"
     assert inherited["XRT_TPU_CONFIG"] == "localservice;0;localhost:51011"
+
+
+def test_libtpu_import_blocker_precedes_installed_module(
+    monkeypatch, tmp_path
+):
+    installed = tmp_path / "installed"
+    installed.mkdir()
+    (installed / "libtpu.py").write_text(
+        "SENTINEL = 'installed-libtpu'\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(installed))
+    environment = {"PYTHONPATH": str(installed)}
+
+    with checkpoint._block_libtpu_import(environment) as blocked:
+        blocker = blocked["PYTHONPATH"].split(os.pathsep)[0]
+        assert blocker != str(installed)
+        assert blocked["RLCSD_LIBTPU_IMPORT_BLOCKED"] == "1"
+        assert sys.path[0] == blocker
+        with pytest.raises(ImportError, match="CPU-only checkpoint"):
+            importlib.import_module("libtpu")
+
+    assert blocker not in sys.path
+    sys.modules.pop("libtpu", None)
+    assert importlib.import_module("libtpu").SENTINEL == "installed-libtpu"
+    sys.modules.pop("libtpu", None)
 
 
 def test_checkpoint_conversion_command_declares_cpu_hardware(
@@ -140,6 +172,12 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
     assert captured["env"]["XLA_FLAGS"].endswith(
         "--xla_force_host_platform_device_count=8"
     )
+    assert captured["env"]["RLCSD_LIBTPU_IMPORT_BLOCKED"] == "1"
+    assert os.path.basename(
+        captured["env"]["PYTHONPATH"].split(os.pathsep)[0]
+    ).startswith(
+        "rlcsd-cpu-libtpu-block-"
+    )
     assert not any(
         key in captured["env"] for key in checkpoint.TPU_RUNTIME_ENV_KEYS
     )
@@ -148,3 +186,4 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
         (output_dir / "checkpoint_manifest.json").read_text(encoding="utf-8")
     )
     assert manifest["runtime_environment"]["tpu_runtime_keys_present"] == []
+    assert manifest["runtime_environment"]["libtpu_import_blocked"] is True
