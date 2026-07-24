@@ -6,12 +6,70 @@ import argparse
 import hashlib
 import json
 import os
+import shlex
 import subprocess
 import sys
 import time
 from pathlib import Path
 
 from benchmarks.maxtext_tpu.matrix import get_case
+
+
+CPU_ONLY_ENV_OVERRIDES = {
+    "JAX_PLATFORMS": "cpu",
+    "PJRT_DEVICE": "CPU",
+    "PYTHONFAULTHANDLER": "1",
+    "PYTHONUNBUFFERED": "1",
+}
+
+TPU_RUNTIME_ENV_KEYS = {
+    "COLAB_TPU_ADDR",
+    "CLOUD_TPU_TASK_ID",
+    "TPU_ACCELERATOR_TYPE",
+    "TPU_CHIPS_PER_HOST_BOUNDS",
+    "TPU_HOST_BOUNDS",
+    "TPU_ML_PLATFORM",
+    "TPU_PROCESS_ADDRESSES",
+    "TPU_PROCESS_BOUNDS",
+    "TPU_VISIBLE_CHIPS",
+    "TPU_WORKER_HOSTNAMES",
+    "TPU_WORKER_ID",
+    "XRT_TPU_CONFIG",
+}
+
+
+def _cpu_only_environment(
+    base_environment: dict[str, str] | None = None,
+    *,
+    simulated_cpu_devices: int = 16,
+) -> dict[str, str]:
+    """Return an environment that cannot attach checkpoint conversion to TPU.
+
+    MaxText imports JAX before its CLI sets ``XLA_FLAGS``. Supplying the
+    simulated CPU device count here ensures XLA observes it at process start.
+    TPU discovery variables are removed so TensorFlow, JAX, or torch-xla
+    imports in the conversion stack cannot attach to the live TPU runtime.
+    """
+
+    if simulated_cpu_devices < 1:
+        raise ValueError("simulated_cpu_devices must be positive")
+
+    environment = dict(
+        os.environ if base_environment is None else base_environment
+    )
+    for key in TPU_RUNTIME_ENV_KEYS:
+        environment.pop(key, None)
+
+    device_flag_prefix = "--xla_force_host_platform_device_count="
+    xla_flags = [
+        token
+        for token in shlex.split(environment.get("XLA_FLAGS", ""))
+        if not token.startswith(device_flag_prefix)
+    ]
+    xla_flags.append(f"{device_flag_prefix}{simulated_cpu_devices}")
+    environment["XLA_FLAGS"] = shlex.join(xla_flags)
+    environment.update(CPU_ONLY_ENV_OVERRIDES)
+    return environment
 
 
 def _resolve_revision(model_id: str, requested_revision: str) -> str:
@@ -51,6 +109,11 @@ def _tree_digest(root: Path) -> tuple[str, int, int]:
 
 
 def main() -> None:
+    # Importing MaxText can initialize JAX. Apply this before resolving the
+    # installed MaxText config so the outer CLI process stays on CPU as well as
+    # the actual conversion subprocess.
+    os.environ.update(CPU_ONLY_ENV_OVERRIDES)
+
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", required=True)
     parser.add_argument("--output-dir", required=True, type=Path)
@@ -74,15 +137,21 @@ def main() -> None:
     resolved_revision = _resolve_revision(case.model.model_id, args.hf_revision)
     started = time.perf_counter()
     command: list[str] = []
+    conversion_env = _cpu_only_environment(
+        simulated_cpu_devices=args.simulated_cpu_devices
+    )
     if not args.reuse:
         output_dir.mkdir(parents=True, exist_ok=True)
         command = [
             sys.executable,
+            "-X",
+            "faulthandler",
             "-m",
             "maxtext.checkpoint_conversion.to_maxtext",
             str(_maxtext_base_config()),
             f"model_name={case.model.model_id.rsplit('/', 1)[-1].lower()}",
             f"base_output_directory={output_dir}",
+            "hardware=cpu",
             "scan_layers=false",
             "use_multimodal=false",
             "skip_jax_distributed_system=true",
@@ -92,8 +161,6 @@ def main() -> None:
             f"--revision={resolved_revision}",
             "--save_dtype=bfloat16",
         ]
-        conversion_env = os.environ.copy()
-        conversion_env["JAX_PLATFORMS"] = "cpu"
         # Authentication remains in the environment; it is never serialized.
         subprocess.run(command, env=conversion_env, check=True)
 
@@ -120,6 +187,16 @@ def main() -> None:
         "tree_metadata_sha256": tree_sha256,
         "reused_existing_output": bool(args.reuse),
         "command": command,
+        "runtime_environment": {
+            "jax_platforms": conversion_env.get("JAX_PLATFORMS", "cpu"),
+            "pjrt_device": conversion_env.get("PJRT_DEVICE", "CPU"),
+            "xla_flags": conversion_env["XLA_FLAGS"],
+            "tpu_runtime_keys_present": sorted(
+                key
+                for key in TPU_RUNTIME_ENV_KEYS
+                if key in conversion_env
+            ),
+        },
         "contains_secret": False,
     }
     manifest_path = output_dir / "checkpoint_manifest.json"
