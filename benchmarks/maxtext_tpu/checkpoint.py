@@ -72,6 +72,21 @@ def _cpu_only_environment(
     return environment
 
 
+def _activate_cpu_only_environment(
+    *, simulated_cpu_devices: int
+) -> dict[str, str]:
+    """Apply CPU isolation before this CLI imports MaxText or JAX."""
+
+    environment = _cpu_only_environment(
+        simulated_cpu_devices=simulated_cpu_devices
+    )
+    for key in TPU_RUNTIME_ENV_KEYS:
+        os.environ.pop(key, None)
+    for key in (*CPU_ONLY_ENV_OVERRIDES, "XLA_FLAGS"):
+        os.environ[key] = environment[key]
+    return environment
+
+
 def _resolve_revision(model_id: str, requested_revision: str) -> str:
     from huggingface_hub import HfApi
 
@@ -109,11 +124,6 @@ def _tree_digest(root: Path) -> tuple[str, int, int]:
 
 
 def main() -> None:
-    # Importing MaxText can initialize JAX. Apply this before resolving the
-    # installed MaxText config so the outer CLI process stays on CPU as well as
-    # the actual conversion subprocess.
-    os.environ.update(CPU_ONLY_ENV_OVERRIDES)
-
     parser = argparse.ArgumentParser()
     parser.add_argument("--case", required=True)
     parser.add_argument("--output-dir", required=True, type=Path)
@@ -126,6 +136,13 @@ def main() -> None:
     )
     args = parser.parse_args()
 
+    # Importing MaxText can initialize JAX. Apply the complete isolation,
+    # including XLA's simulated device flag and removal of TPU discovery
+    # variables, before resolving the installed MaxText config.
+    conversion_env = _activate_cpu_only_environment(
+        simulated_cpu_devices=args.simulated_cpu_devices
+    )
+
     case = get_case(args.case)
     output_dir = args.output_dir.resolve()
     items_dir = output_dir / "0" / "items"
@@ -137,9 +154,6 @@ def main() -> None:
     resolved_revision = _resolve_revision(case.model.model_id, args.hf_revision)
     started = time.perf_counter()
     command: list[str] = []
-    conversion_env = _cpu_only_environment(
-        simulated_cpu_devices=args.simulated_cpu_devices
-    )
     if not args.reuse:
         output_dir.mkdir(parents=True, exist_ok=True)
         command = [

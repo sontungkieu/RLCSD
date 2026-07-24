@@ -12,12 +12,24 @@ def test_checkpoint_cli_forces_outer_process_to_cpu_before_resolution(
     (output_dir / "0" / "items").mkdir(parents=True)
     monkeypatch.setenv("JAX_PLATFORMS", "tpu")
     monkeypatch.setenv("PJRT_DEVICE", "TPU")
+    monkeypatch.setenv("TPU_ACCELERATOR_TYPE", "v5litepod-8")
+    monkeypatch.setenv("XRT_TPU_CONFIG", "localservice;0;localhost:51011")
+    monkeypatch.setenv(
+        "XLA_FLAGS", "--xla_dump_to=/tmp/xla --xla_force_host_platform_device_count=2"
+    )
 
     def resolve_revision(model_id, requested_revision):
         assert model_id == "Qwen/Qwen3-1.7B"
         assert requested_revision == "main"
         assert checkpoint.os.environ["JAX_PLATFORMS"] == "cpu"
         assert checkpoint.os.environ["PJRT_DEVICE"] == "CPU"
+        assert checkpoint.os.environ["XLA_FLAGS"] == (
+            "--xla_dump_to=/tmp/xla --xla_force_host_platform_device_count=16"
+        )
+        assert not any(
+            key in checkpoint.os.environ
+            for key in checkpoint.TPU_RUNTIME_ENV_KEYS
+        )
         return "a" * 40
 
     monkeypatch.setattr(checkpoint, "_resolve_revision", resolve_revision)
