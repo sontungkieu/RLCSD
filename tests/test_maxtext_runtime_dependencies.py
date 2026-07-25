@@ -4,7 +4,7 @@ from pathlib import Path
 
 import pytest
 
-from benchmarks.maxtext_tpu import dependencies
+from benchmarks.maxtext_tpu import config_import_smoke, dependencies
 
 
 def test_requirements_preserve_provider_libtpu():
@@ -81,3 +81,27 @@ def test_tpu_runtime_guard_rejects_libtpu_replacement():
 
     with pytest.raises(RuntimeError, match="libtpu"):
         dependencies.require_unchanged_tpu_runtime(before, after)
+
+
+def test_config_import_smoke_emits_stepwise_progress(capsys):
+    imported = []
+
+    def fake_import(module_name):
+        imported.append(module_name)
+        return object()
+
+    result = config_import_smoke.run_import_smoke(fake_import)
+    output = capsys.readouterr().out
+
+    assert result == config_import_smoke.SMOKE_MODULES
+    assert imported == list(config_import_smoke.SMOKE_MODULES)
+    for module_name in config_import_smoke.SMOKE_MODULES:
+        assert (
+            f'RLCSD_MAXTEXT_IMPORT_START {{"module": "{module_name}"}}'
+            in output
+        )
+        assert (
+            f'RLCSD_MAXTEXT_IMPORT_OK {{"module": "{module_name}"}}'
+            in output
+        )
+    assert '"ok": true' in output
