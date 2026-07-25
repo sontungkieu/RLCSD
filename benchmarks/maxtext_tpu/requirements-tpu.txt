@@ -1,4 +1,7 @@
 # The exact Tunix commit contains MaxTextPipelineConfig and mesh validation.
+# Its package metadata requests ``jax[tpu]``.  The Kaggle setup must therefore
+# install this requirements file with ``--no-deps`` so pip cannot replace the
+# provider-managed JAX/libtpu stack.
 google-tunix @ git+https://github.com/sontungkieu/tunix.git@50f5752a17edec56e2aa30aabfc03859949adf6f
 # Kaggle already supplies the TPU-matched JAX/libtpu runtime.  The MaxText
 # ``tpu`` extra replaces that libtpu wheel in-place, which is unsafe in a live

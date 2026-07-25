@@ -23,6 +23,18 @@ def test_requirements_preserve_provider_libtpu():
     )
 
 
+def test_provider_runtime_safe_install_disables_dependency_resolution():
+    command = dependencies.provider_runtime_safe_pip_install_command(
+        "/usr/bin/python3",
+        "/tmp/requirements-tpu.txt",
+    )
+
+    assert command[:4] == ["/usr/bin/python3", "-m", "pip", "install"]
+    assert "--no-deps" in command
+    assert command[-2:] == ["-r", "/tmp/requirements-tpu.txt"]
+    assert "--upgrade" not in command
+
+
 def test_tpu_runtime_guard_accepts_unchanged_versions():
     versions = {"jax": "0.10.2", "jaxlib": "0.10.2", "libtpu": "0.0.17"}
     dependencies.require_unchanged_tpu_runtime(versions, versions.copy())

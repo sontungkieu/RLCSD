@@ -4,9 +4,28 @@ from __future__ import annotations
 
 import importlib.metadata
 from collections.abc import Iterable, Mapping
+from os import PathLike
 
 
 TPU_RUNTIME_DISTRIBUTIONS = ("jax", "jaxlib", "libtpu")
+
+
+def provider_runtime_safe_pip_install_command(
+    python_executable: str,
+    requirements_path: str | PathLike[str],
+) -> list[str]:
+    """Install direct requirements without resolving a replacement TPU stack."""
+
+    return [
+        python_executable,
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--no-deps",
+        "-r",
+        str(requirements_path),
+    ]
 
 
 def distribution_versions(
