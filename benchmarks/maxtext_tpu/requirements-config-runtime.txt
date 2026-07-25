@@ -1,0 +1,7 @@
+# PathwaysUtils imports FastAPI/Uvicorn from its profiling module, while
+# MaxText config initialization imports OmegaConf. Resolve this small,
+# accelerator-independent tree separately from requirements-tpu.txt, whose
+# install must remain --no-deps.
+fastapi>=0.115,<1
+omegaconf>=2.3,<3
+uvicorn>=0.30,<1

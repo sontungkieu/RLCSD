@@ -28,6 +28,25 @@ def provider_runtime_safe_pip_install_command(
     ]
 
 
+def auxiliary_pip_install_command(
+    python_executable: str,
+    requirements_path: str | PathLike[str],
+) -> list[str]:
+    """Resolve non-accelerator dependencies without upgrading satisfied ones."""
+
+    return [
+        python_executable,
+        "-m",
+        "pip",
+        "install",
+        "--disable-pip-version-check",
+        "--upgrade-strategy",
+        "only-if-needed",
+        "-r",
+        str(requirements_path),
+    ]
+
+
 def distribution_versions(
     names: Iterable[str] = TPU_RUNTIME_DISTRIBUTIONS,
 ) -> dict[str, str | None]:
