@@ -33,6 +33,7 @@ def test_pathways_auxiliary_requirements_cover_unconditional_imports():
     ).read_text(encoding="utf-8")
 
     assert "aqtp==0.9.0" in requirements
+    assert "tokamax==0.0.12" in requirements
     assert "fastapi>=0.115,<1" in requirements
     assert "omegaconf>=2.3,<3" in requirements
     assert "uvicorn>=0.30,<1" in requirements

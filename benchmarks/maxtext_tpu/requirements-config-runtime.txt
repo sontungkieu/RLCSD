@@ -1,9 +1,11 @@
 # PathwaysUtils imports FastAPI/Uvicorn from its profiling module, while
-# MaxText imports AQT initializers and config initialization imports OmegaConf.
+# MaxText imports AQT initializers and Tokamax splash-attention kernels, while
+# config initialization imports OmegaConf.
 # Resolve this small,
 # accelerator-independent tree separately from requirements-tpu.txt, whose
 # install must remain --no-deps.
 aqtp==0.9.0
+tokamax==0.0.12
 fastapi>=0.115,<1
 omegaconf>=2.3,<3
 uvicorn>=0.30,<1
