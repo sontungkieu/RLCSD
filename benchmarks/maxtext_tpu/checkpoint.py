@@ -146,6 +146,15 @@ def _resolve_revision(model_id: str, requested_revision: str) -> str:
     return info.sha
 
 
+def _emit_conversion_milestone(name: str, **details: object) -> None:
+    payload = {"milestone": name, **details}
+    print(
+        "RLCSD_CHECKPOINT_CONVERSION_MILESTONE "
+        + json.dumps(payload, sort_keys=True),
+        flush=True,
+    )
+
+
 def _maxtext_base_config() -> Path:
     import maxtext
 
@@ -192,6 +201,12 @@ def main() -> None:
     conversion_env = _activate_cpu_only_environment(
         simulated_cpu_devices=args.simulated_cpu_devices
     )
+    _emit_conversion_milestone(
+        "cpu_environment_activated",
+        jax_platforms=conversion_env["JAX_PLATFORMS"],
+        pjrt_device=conversion_env["PJRT_DEVICE"],
+        simulated_cpu_devices=args.simulated_cpu_devices,
+    )
 
     case = get_case(args.case)
     output_dir = args.output_dir.resolve()
@@ -202,18 +217,34 @@ def main() -> None:
         )
 
     resolved_revision = _resolve_revision(case.model.model_id, args.hf_revision)
+    _emit_conversion_milestone(
+        "hf_revision_resolved",
+        model_id=case.model.model_id,
+        resolved_revision=resolved_revision,
+    )
     started = time.perf_counter()
     command: list[str] = []
     if not args.reuse:
         output_dir.mkdir(parents=True, exist_ok=True)
         with _block_libtpu_import(conversion_env) as blocked_env:
+            _emit_conversion_milestone(
+                "libtpu_import_blocked",
+                blocker_enabled=(
+                    blocked_env.get("RLCSD_LIBTPU_IMPORT_BLOCKED") == "1"
+                ),
+            )
+            base_config = _maxtext_base_config()
+            _emit_conversion_milestone(
+                "maxtext_base_config_resolved",
+                base_config=str(base_config),
+            )
             command = [
                 sys.executable,
                 "-X",
                 "faulthandler",
                 "-m",
                 "maxtext.checkpoint_conversion.to_maxtext",
-                str(_maxtext_base_config()),
+                str(base_config),
                 f"model_name={case.model.model_id.rsplit('/', 1)[-1].lower()}",
                 f"base_output_directory={output_dir}",
                 "hardware=cpu",
@@ -226,6 +257,13 @@ def main() -> None:
                 f"--revision={resolved_revision}",
                 "--save_dtype=bfloat16",
             ]
+            _emit_conversion_milestone(
+                "conversion_subprocess_starting",
+                child_libtpu_import_blocked=(
+                    blocked_env.get("RLCSD_LIBTPU_IMPORT_BLOCKED") == "1"
+                ),
+                command_module="maxtext.checkpoint_conversion.to_maxtext",
+            )
             # Authentication remains in the environment; it is never
             # serialized. The libtpu blocker is scoped to conversion only.
             subprocess.run(command, env=blocked_env, check=True)
