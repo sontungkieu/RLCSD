@@ -7,6 +7,10 @@ google-tunix @ git+https://github.com/sontungkieu/tunix.git@50f5752a17edec56e2aa
 # ``tpu`` extra replaces that libtpu wheel in-place, which is unsafe in a live
 # TPU VM.  Install only the MaxText package and preserve the provider runtime.
 maxtext==0.2.3
+# Bare MaxText is installed without dependency resolution to protect Kaggle's
+# TPU stack, so runtime-only imports must be declared explicitly.  MaxText
+# 0.2.3 imports this package from maxtext.utils.elastic_utils at config init.
+pathwaysutils>=0.1.8,<0.2
 pyarrow>=24.0.0
 psutil
 torch

@@ -16,6 +16,7 @@ def test_requirements_preserve_provider_libtpu():
     ).read_text(encoding="utf-8")
 
     assert "maxtext==0.2.3" in requirements
+    assert "pathwaysutils>=0.1.8,<0.2" in requirements
     assert "maxtext[tpu]" not in requirements.lower()
     assert not any(
         line.strip().lower().startswith("libtpu")
