@@ -4,6 +4,7 @@ import importlib
 import json
 import os
 import sys
+from types import SimpleNamespace
 
 import pytest
 
@@ -261,6 +262,11 @@ def test_maxtext_converter_registers_qwen3_1_7b_before_delegating(
         "_validate_installed_conversion_support",
         lambda model_names: {"all_tables": list(model_names)},
     )
+    monkeypatch.setattr(
+        maxtext_conversion,
+        "_install_qwen_pipeline_conversion_compatibility",
+        lambda model_names: {"installed": list(model_names)},
+    )
     maxtext_conversion.main()
 
     assert delegated == {
@@ -272,6 +278,7 @@ def test_maxtext_converter_registers_qwen3_1_7b_before_delegating(
     marker = capsys.readouterr().out
     assert "RLCSD_MAXTEXT_HF_ID_COMPATIBILITY" in marker
     assert '"qwen3-1.7b"' in marker
+    assert '"pipeline_compatibility"' in marker
     assert '"validated_tables"' in marker
 
 
@@ -306,4 +313,124 @@ def test_maxtext_converter_rejects_missing_conversion_table(
     with pytest.raises(RuntimeError, match="param_mapping"):
         maxtext_conversion._validate_installed_conversion_support(
             ["qwen3-1.7b"]
+        )
+
+
+def test_qwen_pipeline_mapping_covers_stage_local_abstract_keys():
+    base_mapping = {
+        "params-token_embedder-embedding": "model.embed_tokens.weight",
+        "params-decoder-layers-self_attention-query-kernel": [
+            f"model.layers.{layer}.self_attn.q_proj.weight"
+            for layer in range(28)
+        ],
+        "params-decoder-layers-mlp-wi_0-kernel": [
+            f"model.layers.{layer}.mlp.gate_proj.weight"
+            for layer in range(28)
+        ],
+    }
+
+    remapped = maxtext_conversion._pipeline_qwen_param_mapping(
+        base_mapping,
+        num_hidden_layers=28,
+        pipeline_stages=2,
+        layers_per_stage=14,
+    )
+
+    assert "params-decoder-layers-self_attention-query-kernel" not in remapped
+    assert remapped["params-token_embedder-embedding"] == (
+        "model.embed_tokens.weight"
+    )
+    assert remapped[
+        "params-decoder-pipeline_module-layers-layers_0-"
+        "self_attention-query-kernel"
+    ] == (
+        "model.layers.0.self_attn.q_proj.weight",
+        "model.layers.14.self_attn.q_proj.weight",
+    )
+    assert remapped[
+        "params-decoder-pipeline_module-layers-layers_13-"
+        "mlp-wi_0-kernel"
+    ] == (
+        "model.layers.13.mlp.gate_proj.weight",
+        "model.layers.27.mlp.gate_proj.weight",
+    )
+
+
+def test_qwen_pipeline_wrappers_remap_scanned_mapping_and_hooks():
+    marker_hook = object()
+    config = SimpleNamespace(
+        ici_pipeline_parallelism=2,
+        dcn_pipeline_parallelism=1,
+        num_pipeline_repeats=1,
+        num_layers_per_pipeline_stage=14,
+        scan_layers_per_stage=False,
+    )
+
+    wrapped_mapping = maxtext_conversion._wrap_qwen_pipeline_mapping(
+        lambda *_: {
+            "params-decoder-layers-mlp-wo-kernel": [
+                f"model.layers.{layer}.mlp.down_proj.weight"
+                for layer in range(28)
+            ]
+        }
+    )
+    wrapped_hooks = maxtext_conversion._wrap_qwen_pipeline_hooks(
+        lambda *_, **__: {
+            "params-decoder-layers-mlp-wo-kernel": marker_hook
+        },
+        lambda *_: {
+            "params-decoder-layers-mlp-wo-kernel": [
+                f"model.layers.{layer}.mlp.down_proj.weight"
+                for layer in range(28)
+            ]
+        },
+    )
+
+    mapping = wrapped_mapping(
+        {"num_hidden_layers": 28}, config, scan_layers=True
+    )
+    hooks = wrapped_hooks(
+        {"num_hidden_layers": 28},
+        config,
+        scan_layers=True,
+        saving_to_hf=False,
+    )
+    local_key = (
+        "params-decoder-pipeline_module-layers-layers_7-"
+        "mlp-wo-kernel"
+    )
+    assert mapping[local_key] == (
+        "model.layers.7.mlp.down_proj.weight",
+        "model.layers.21.mlp.down_proj.weight",
+    )
+    assert callable(hooks[local_key])
+
+
+def test_qwen_pipeline_hook_stacks_stage_axis_before_converter_scan_axis():
+    hook = maxtext_conversion._stack_pipeline_stages_hook(
+        lambda tensor, target_shape: tensor.T.reshape(target_shape),
+        pipeline_stages=2,
+    )
+    stage_0 = maxtext_conversion.np.arange(6).reshape(2, 3)
+    stage_1 = stage_0 + 10
+
+    converted = hook((stage_0, stage_1), (2, 3, 2))
+
+    assert converted.shape == (2, 3, 2)
+    assert converted[0].tolist() == stage_0.T.tolist()
+    assert converted[1].tolist() == stage_1.T.tolist()
+
+
+def test_qwen_pipeline_mapping_rejects_incomplete_layout():
+    with pytest.raises(RuntimeError, match="does not cover every Qwen layer"):
+        maxtext_conversion._pipeline_qwen_param_mapping(
+            {
+                "params-decoder-layers-mlp-wo-kernel": [
+                    f"model.layers.{layer}.mlp.down_proj.weight"
+                    for layer in range(28)
+                ]
+            },
+            num_hidden_layers=28,
+            pipeline_stages=2,
+            layers_per_stage=13,
         )
