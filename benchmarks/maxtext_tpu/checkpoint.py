@@ -260,7 +260,12 @@ def main() -> None:
                 f"model_name={case.model.model_id.rsplit('/', 1)[-1].lower()}",
                 f"base_output_directory={output_dir}",
                 "hardware=cpu",
-                "scan_layers=false",
+                # MaxText 0.2.3's pipeline weight-initialization path leaves
+                # the stage axis in the sample output when scan_layers=false,
+                # then reshapes a PP-expanded batch into the unexpanded batch.
+                # scan_layers=true removes that auxiliary output axis and is
+                # also the structure used by the PP checkpoint loader.
+                "scan_layers=true",
                 *(
                     f"{key}={value}"
                     for key, value in case.maxtext_pipeline_kwargs.items()
@@ -298,7 +303,7 @@ def main() -> None:
         "requested_hf_revision": args.hf_revision,
         "resolved_hf_revision": resolved_revision,
         "checkpoint_items_path": str(items_dir),
-        "scan_layers": False,
+        "scan_layers": True,
         "maxtext_pipeline": case.maxtext_pipeline_kwargs,
         "save_dtype": "bfloat16",
         "simulated_cpu_devices": args.simulated_cpu_devices,

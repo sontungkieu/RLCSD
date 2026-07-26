@@ -49,9 +49,9 @@ def read_checkpoint_manifest(
         )
     if not manifest.get("resolved_hf_revision"):
         raise ValueError("Checkpoint manifest has no resolved HF revision.")
-    if manifest.get("scan_layers") is not False:
+    if manifest.get("scan_layers") is not True:
         raise ValueError(
-            "Checkpoint manifest must declare scan_layers=false."
+            "Checkpoint manifest must declare scan_layers=true."
         )
     if manifest.get("maxtext_pipeline") != case.maxtext_pipeline_kwargs:
         raise ValueError(
@@ -394,7 +394,11 @@ def load_model(
             enable_dropout=False,
             attention="dot_product",
             remat_policy="full",
-            scan_layers=False,
+            # Keep this aligned with checkpoint conversion. MaxText 0.2.3's
+            # PP initializer only removes the auxiliary scanned output axis
+            # before restoring the pipeline-shaped parameter tree when this
+            # flag is enabled.
+            scan_layers=True,
             scan_layers_per_stage=False,
         )
     weights = (

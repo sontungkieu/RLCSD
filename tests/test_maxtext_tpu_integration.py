@@ -63,7 +63,7 @@ def test_checkpoint_manifest_is_reusable_across_same_model_cases(tmp_path):
                 "source_case_id": source_case.case_id,
                 "model_id": "Qwen/Qwen3-8B",
                 "resolved_hf_revision": "a" * 40,
-                "scan_layers": False,
+                "scan_layers": True,
                 "maxtext_pipeline": source_case.maxtext_pipeline_kwargs,
             }
         ),
@@ -84,7 +84,7 @@ def test_checkpoint_manifest_rejects_different_pipeline_structure(tmp_path):
                 "source_case_id": source_case.case_id,
                 "model_id": source_case.model.model_id,
                 "resolved_hf_revision": "a" * 40,
-                "scan_layers": False,
+                "scan_layers": True,
                 "maxtext_pipeline": source_case.maxtext_pipeline_kwargs,
             }
         ),
@@ -160,7 +160,7 @@ def test_load_model_enables_maxtext_checkpoint_loading_only_when_needed(
     )
 
     assert captured["enable_checkpointing"] is expected_enable_checkpointing
-    assert captured["scan_layers"] is False
+    assert captured["scan_layers"] is True
     assert captured["model_path"] == (
         str(checkpoint_items.resolve()) if checkpoint_items else None
     )

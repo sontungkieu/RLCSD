@@ -193,7 +193,7 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
     )
     assert "model_name=qwen3-1.7b" in captured["command"]
     assert "hardware=cpu" in captured["command"]
-    assert "scan_layers=false" in captured["command"]
+    assert "scan_layers=true" in captured["command"]
     assert "ici_pipeline_parallelism=2" in captured["command"]
     assert "ici_tensor_parallelism=4" in captured["command"]
     assert "ici_data_parallelism=1" in captured["command"]
@@ -223,7 +223,7 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
     assert manifest["runtime_environment"]["tpu_runtime_keys_present"] == []
     assert manifest["runtime_environment"]["libtpu_import_blocked"] is True
     assert manifest["runtime_environment"]["use_torch_xla"] == "0"
-    assert manifest["scan_layers"] is False
+    assert manifest["scan_layers"] is True
     assert manifest["maxtext_pipeline"] == {
         "ici_pipeline_parallelism": 2,
         "ici_tensor_parallelism": 4,
