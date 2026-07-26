@@ -49,6 +49,16 @@ def read_checkpoint_manifest(
         )
     if not manifest.get("resolved_hf_revision"):
         raise ValueError("Checkpoint manifest has no resolved HF revision.")
+    if manifest.get("scan_layers") is not False:
+        raise ValueError(
+            "Checkpoint manifest must declare scan_layers=false."
+        )
+    if manifest.get("maxtext_pipeline") != case.maxtext_pipeline_kwargs:
+        raise ValueError(
+            "Checkpoint MaxText pipeline structure does not match the "
+            f"benchmark case: {manifest.get('maxtext_pipeline')} != "
+            f"{case.maxtext_pipeline_kwargs}."
+        )
     return manifest
 
 
@@ -384,6 +394,7 @@ def load_model(
             enable_dropout=False,
             attention="dot_product",
             remat_policy="full",
+            scan_layers=False,
             scan_layers_per_stage=False,
         )
     weights = (

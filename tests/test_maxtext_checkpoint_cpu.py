@@ -193,6 +193,13 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
     )
     assert "model_name=qwen3-1.7b" in captured["command"]
     assert "hardware=cpu" in captured["command"]
+    assert "scan_layers=false" in captured["command"]
+    assert "ici_pipeline_parallelism=2" in captured["command"]
+    assert "ici_tensor_parallelism=4" in captured["command"]
+    assert "ici_data_parallelism=1" in captured["command"]
+    assert "ici_fsdp_parallelism=1" in captured["command"]
+    assert "num_layers_per_pipeline_stage=14" in captured["command"]
+    assert "num_pipeline_microbatches=4" in captured["command"]
     assert "--simulated_cpu_devices_count=8" in captured["command"]
     assert captured["env"]["JAX_PLATFORMS"] == "cpu"
     assert captured["env"]["PJRT_DEVICE"] == "CPU"
@@ -216,6 +223,15 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
     assert manifest["runtime_environment"]["tpu_runtime_keys_present"] == []
     assert manifest["runtime_environment"]["libtpu_import_blocked"] is True
     assert manifest["runtime_environment"]["use_torch_xla"] == "0"
+    assert manifest["scan_layers"] is False
+    assert manifest["maxtext_pipeline"] == {
+        "ici_pipeline_parallelism": 2,
+        "ici_tensor_parallelism": 4,
+        "ici_data_parallelism": 1,
+        "ici_fsdp_parallelism": 1,
+        "num_layers_per_pipeline_stage": 14,
+        "num_pipeline_microbatches": 4,
+    }
 
 
 def test_maxtext_converter_registers_qwen3_1_7b_before_delegating(

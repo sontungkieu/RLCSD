@@ -57,6 +57,19 @@ class BenchmarkCase:
     def num_layers_per_pipeline_stage(self) -> int:
         return self.model.num_decoder_layers // self.layout.pipeline_parallelism
 
+    @property
+    def maxtext_pipeline_kwargs(self) -> dict[str, int]:
+        """Return the MaxText structure-defining pipeline overrides."""
+
+        return {
+            "ici_pipeline_parallelism": self.layout.pipeline_parallelism,
+            "ici_tensor_parallelism": self.layout.tensor_parallelism,
+            "ici_data_parallelism": 1,
+            "ici_fsdp_parallelism": 1,
+            "num_layers_per_pipeline_stage": self.num_layers_per_pipeline_stage,
+            "num_pipeline_microbatches": self.num_pipeline_microbatches,
+        }
+
     def validate(self) -> None:
         if self.layout.required_device_count != EXPECTED_TPU_DEVICES:
             raise ValueError(

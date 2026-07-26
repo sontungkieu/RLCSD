@@ -56,18 +56,43 @@ def test_checkpoint_manifest_is_reusable_across_same_model_cases(tmp_path):
     checkpoint_root = tmp_path / "qwen3_8b"
     items = checkpoint_root / "0" / "items"
     items.mkdir(parents=True)
+    source_case = get_case("qwen3_8b-bs12-pp2xtp4")
     (checkpoint_root / "checkpoint_manifest.json").write_text(
         json.dumps(
             {
-                "source_case_id": "qwen3_8b-bs12-pp2xtp4",
+                "source_case_id": source_case.case_id,
                 "model_id": "Qwen/Qwen3-8B",
                 "resolved_hf_revision": "a" * 40,
+                "scan_layers": False,
+                "maxtext_pipeline": source_case.maxtext_pipeline_kwargs,
             }
         ),
         encoding="utf-8",
     )
-    manifest = read_checkpoint_manifest(items, get_case("qwen3_8b-bs64-pp4xtp2"))
+    manifest = read_checkpoint_manifest(items, get_case("qwen3_8b-bs64-pp2xtp4"))
     assert manifest["source_case_id"] == "qwen3_8b-bs12-pp2xtp4"
+
+
+def test_checkpoint_manifest_rejects_different_pipeline_structure(tmp_path):
+    checkpoint_root = tmp_path / "qwen3_8b"
+    items = checkpoint_root / "0" / "items"
+    items.mkdir(parents=True)
+    source_case = get_case("qwen3_8b-bs12-pp2xtp4")
+    (checkpoint_root / "checkpoint_manifest.json").write_text(
+        json.dumps(
+            {
+                "source_case_id": source_case.case_id,
+                "model_id": source_case.model.model_id,
+                "resolved_hf_revision": "a" * 40,
+                "scan_layers": False,
+                "maxtext_pipeline": source_case.maxtext_pipeline_kwargs,
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    with pytest.raises(ValueError, match="pipeline structure"):
+        read_checkpoint_manifest(items, get_case("qwen3_8b-bs12-pp4xtp2"))
 
 
 @pytest.mark.parametrize(
@@ -135,6 +160,7 @@ def test_load_model_enables_maxtext_checkpoint_loading_only_when_needed(
     )
 
     assert captured["enable_checkpointing"] is expected_enable_checkpointing
+    assert captured["scan_layers"] is False
     assert captured["model_path"] == (
         str(checkpoint_items.resolve()) if checkpoint_items else None
     )

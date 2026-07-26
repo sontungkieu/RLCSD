@@ -261,6 +261,10 @@ def main() -> None:
                 f"base_output_directory={output_dir}",
                 "hardware=cpu",
                 "scan_layers=false",
+                *(
+                    f"{key}={value}"
+                    for key, value in case.maxtext_pipeline_kwargs.items()
+                ),
                 "use_multimodal=false",
                 "skip_jax_distributed_system=true",
                 "--lazy_load_tensors=true",
@@ -295,6 +299,7 @@ def main() -> None:
         "resolved_hf_revision": resolved_revision,
         "checkpoint_items_path": str(items_dir),
         "scan_layers": False,
+        "maxtext_pipeline": case.maxtext_pipeline_kwargs,
         "save_dtype": "bfloat16",
         "simulated_cpu_devices": args.simulated_cpu_devices,
         "elapsed_s": time.perf_counter() - started,
