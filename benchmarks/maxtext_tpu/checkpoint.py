@@ -24,6 +24,10 @@ CPU_ONLY_ENV_OVERRIDES = {
     "PJRT_DEVICE": "CPU",
     "PYTHONFAULTHANDLER": "1",
     "PYTHONUNBUFFERED": "1",
+    # Accelerate probes torch_xla at import time unless this is disabled.
+    # Importing the provider-installed torch_xla while this subprocess is
+    # isolated from the live TPU can crash in native initialization.
+    "USE_TORCH_XLA": "0",
 }
 
 TPU_RUNTIME_ENV_KEYS = {
@@ -302,6 +306,7 @@ def main() -> None:
         "runtime_environment": {
             "jax_platforms": conversion_env.get("JAX_PLATFORMS", "cpu"),
             "pjrt_device": conversion_env.get("PJRT_DEVICE", "CPU"),
+            "use_torch_xla": conversion_env.get("USE_TORCH_XLA", "0"),
             "xla_flags": conversion_env["XLA_FLAGS"],
             "libtpu_import_blocked": not args.reuse,
             "tpu_runtime_keys_present": sorted(

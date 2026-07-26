@@ -59,6 +59,7 @@ def test_checkpoint_cli_forces_outer_process_to_cpu_before_resolution(
     runtime_environment = manifest["runtime_environment"]
     assert runtime_environment["jax_platforms"] == "cpu"
     assert runtime_environment["pjrt_device"] == "CPU"
+    assert runtime_environment["use_torch_xla"] == "0"
     assert runtime_environment["xla_flags"].endswith(
         "--xla_force_host_platform_device_count=16"
     )
@@ -72,6 +73,7 @@ def test_checkpoint_cpu_environment_overrides_inherited_tpu_without_mutation():
         "PJRT_DEVICE": "TPU",
         "TPU_ACCELERATOR_TYPE": "v5litepod-8",
         "TPU_WORKER_HOSTNAMES": "localhost",
+        "USE_TORCH_XLA": "1",
         "XLA_FLAGS": "--xla_dump_to=/tmp/xla --xla_force_host_platform_device_count=2",
         "XRT_TPU_CONFIG": "localservice;0;localhost:51011",
         "HF_HOME": "/tmp/hf",
@@ -84,6 +86,7 @@ def test_checkpoint_cpu_environment_overrides_inherited_tpu_without_mutation():
     assert isolated["PJRT_DEVICE"] == "CPU"
     assert isolated["PYTHONFAULTHANDLER"] == "1"
     assert isolated["PYTHONUNBUFFERED"] == "1"
+    assert isolated["USE_TORCH_XLA"] == "0"
     assert isolated["HF_HOME"] == "/tmp/hf"
     assert isolated["XLA_FLAGS"] == (
         "--xla_dump_to=/tmp/xla --xla_force_host_platform_device_count=8"
@@ -94,6 +97,7 @@ def test_checkpoint_cpu_environment_overrides_inherited_tpu_without_mutation():
     assert inherited["JAX_PLATFORMS"] == "tpu"
     assert inherited["PJRT_DEVICE"] == "TPU"
     assert inherited["TPU_ACCELERATOR_TYPE"] == "v5litepod-8"
+    assert inherited["USE_TORCH_XLA"] == "1"
     assert inherited["XRT_TPU_CONFIG"] == "localservice;0;localhost:51011"
 
 
@@ -187,6 +191,7 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
     assert "--simulated_cpu_devices_count=8" in captured["command"]
     assert captured["env"]["JAX_PLATFORMS"] == "cpu"
     assert captured["env"]["PJRT_DEVICE"] == "CPU"
+    assert captured["env"]["USE_TORCH_XLA"] == "0"
     assert captured["env"]["XLA_FLAGS"].endswith(
         "--xla_force_host_platform_device_count=8"
     )
@@ -205,3 +210,4 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
     )
     assert manifest["runtime_environment"]["tpu_runtime_keys_present"] == []
     assert manifest["runtime_environment"]["libtpu_import_blocked"] is True
+    assert manifest["runtime_environment"]["use_torch_xla"] == "0"
