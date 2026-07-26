@@ -1,10 +1,14 @@
 from __future__ import annotations
 
+from contextlib import nullcontext
 import json
 import math
+import sys
+import types
 from pathlib import Path
 
 import jax.numpy as jnp
+import pytest
 
 from benchmarks.maxtext_tpu.audit import audit_payload
 from benchmarks.maxtext_tpu.matrix import (
@@ -14,6 +18,7 @@ from benchmarks.maxtext_tpu.matrix import (
     validate_repo_configs,
 )
 from benchmarks.maxtext_tpu.rlcsd_jax import rlcsd_policy_loss
+from benchmarks.maxtext_tpu import runtime
 from benchmarks.maxtext_tpu.runtime import read_checkpoint_manifest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -63,6 +68,76 @@ def test_checkpoint_manifest_is_reusable_across_same_model_cases(tmp_path):
     )
     manifest = read_checkpoint_manifest(items, get_case("qwen3_8b-bs64-pp4xtp2"))
     assert manifest["source_case_id"] == "qwen3_8b-bs12-pp2xtp4"
+
+
+@pytest.mark.parametrize(
+    ("use_checkpoint", "expected_enable_checkpointing"),
+    [(True, True), (False, False)],
+)
+def test_load_model_enables_maxtext_checkpoint_loading_only_when_needed(
+    tmp_path,
+    monkeypatch,
+    use_checkpoint,
+    expected_enable_checkpointing,
+):
+    captured = {}
+
+    class FakeParallelConfig:
+        def create_mesh(self, *, devices):
+            assert devices == ["tpu"]
+            return "mesh"
+
+    class FakeAutoModel:
+        @staticmethod
+        def from_pretrained(**kwargs):
+            captured.update(kwargs)
+            return "model", kwargs["model_path"]
+
+    fake_jax = types.ModuleType("jax")
+    fake_jax.set_mesh = lambda mesh: nullcontext()
+    fake_automodel = types.ModuleType("tunix.models.automodel")
+    fake_automodel.AutoModel = FakeAutoModel
+    fake_automodel.ModelSource = types.SimpleNamespace(MAXTEXT="maxtext")
+    fake_models = types.ModuleType("tunix.models")
+    fake_models.automodel = fake_automodel
+    fake_tunix = types.ModuleType("tunix")
+    fake_tunix.models = fake_models
+
+    monkeypatch.setitem(sys.modules, "jax", fake_jax)
+    monkeypatch.setitem(sys.modules, "tunix", fake_tunix)
+    monkeypatch.setitem(sys.modules, "tunix.models", fake_models)
+    monkeypatch.setitem(
+        sys.modules,
+        "tunix.models.automodel",
+        fake_automodel,
+    )
+    monkeypatch.setattr(
+        runtime,
+        "create_parallel_config",
+        lambda case: FakeParallelConfig(),
+    )
+    monkeypatch.setattr(
+        runtime,
+        "read_checkpoint_manifest",
+        lambda checkpoint_items, case: {},
+    )
+
+    checkpoint_items = None
+    if use_checkpoint:
+        checkpoint_items = tmp_path / "checkpoint" / "0" / "items"
+        checkpoint_items.mkdir(parents=True)
+
+    runtime.load_model(
+        get_case("qwen3_1_7b-bs12-pp2xtp4"),
+        devices=["tpu"],
+        checkpoint_items=checkpoint_items,
+        allow_random_weights=not use_checkpoint,
+    )
+
+    assert captured["enable_checkpointing"] is expected_enable_checkpointing
+    assert captured["model_path"] == (
+        str(checkpoint_items.resolve()) if checkpoint_items else None
+    )
 
 
 def test_rlcsd_jax_zero_contrast_reduces_to_ppo_path():

@@ -377,7 +377,10 @@ def load_model(
             max_target_length=case.sequence_length,
             steps=1,
             dataset_type="synthetic",
-            enable_checkpointing=False,
+            # MaxText 0.2.3 rejects load_parameters_path unless
+            # checkpointing is enabled. Keep it disabled only for the
+            # explicitly labelled random-weight infrastructure smoke path.
+            enable_checkpointing=checkpoint_items is not None,
             enable_dropout=False,
             attention="dot_product",
             remat_policy="full",
