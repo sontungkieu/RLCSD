@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import contextlib
 import hashlib
+import importlib.machinery
 import json
 import os
 import shlex
@@ -156,9 +157,16 @@ def _emit_conversion_milestone(name: str, **details: object) -> None:
 
 
 def _maxtext_base_config() -> Path:
-    import maxtext
-
-    path = Path(maxtext.__file__).resolve().parent / "configs" / "base.yml"
+    spec = importlib.machinery.PathFinder.find_spec("maxtext")
+    search_locations = (
+        tuple(spec.submodule_search_locations or ()) if spec is not None else ()
+    )
+    if len(search_locations) != 1:
+        raise ImportError(
+            "Installed MaxText package could not be resolved without executing "
+            "maxtext.__init__."
+        )
+    path = Path(search_locations[0]).resolve() / "configs" / "base.yml"
     if not path.is_file():
         raise FileNotFoundError(
             f"Installed MaxText base config was not found at {path}."

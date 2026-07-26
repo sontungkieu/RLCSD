@@ -123,6 +123,24 @@ def test_libtpu_import_blocker_precedes_installed_module(
     sys.modules.pop("libtpu", None)
 
 
+def test_maxtext_base_config_discovery_does_not_execute_package(
+    monkeypatch, tmp_path
+):
+    package = tmp_path / "maxtext"
+    config = package / "configs" / "base.yml"
+    config.parent.mkdir(parents=True)
+    config.write_text("base_config: true\n", encoding="utf-8")
+    (package / "__init__.py").write_text(
+        "raise RuntimeError('maxtext package executed')\n",
+        encoding="utf-8",
+    )
+    monkeypatch.syspath_prepend(str(tmp_path))
+    sys.modules.pop("maxtext", None)
+
+    assert checkpoint._maxtext_base_config() == config.resolve()
+    assert "maxtext" not in sys.modules
+
+
 def test_checkpoint_conversion_command_declares_cpu_hardware(
     monkeypatch, tmp_path
 ):
