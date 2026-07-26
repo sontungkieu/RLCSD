@@ -255,7 +255,7 @@ def main() -> None:
                 "-X",
                 "faulthandler",
                 "-m",
-                "maxtext.checkpoint_conversion.to_maxtext",
+                "benchmarks.maxtext_tpu.maxtext_conversion",
                 str(base_config),
                 f"model_name={case.model.model_id.rsplit('/', 1)[-1].lower()}",
                 f"base_output_directory={output_dir}",
@@ -274,7 +274,7 @@ def main() -> None:
                 child_libtpu_import_blocked=(
                     blocked_env.get("RLCSD_LIBTPU_IMPORT_BLOCKED") == "1"
                 ),
-                command_module="maxtext.checkpoint_conversion.to_maxtext",
+                command_module="benchmarks.maxtext_tpu.maxtext_conversion",
             )
             # Authentication remains in the environment; it is never
             # serialized. The libtpu blocker is scoped to conversion only.

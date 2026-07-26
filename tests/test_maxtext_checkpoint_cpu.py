@@ -8,6 +8,7 @@ import sys
 import pytest
 
 from benchmarks.maxtext_tpu import checkpoint
+from benchmarks.maxtext_tpu import maxtext_conversion
 
 
 def test_checkpoint_cli_forces_outer_process_to_cpu_before_resolution(
@@ -187,6 +188,10 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
         "faulthandler",
         "-m",
     ]
+    assert captured["command"][4] == (
+        "benchmarks.maxtext_tpu.maxtext_conversion"
+    )
+    assert "model_name=qwen3-1.7b" in captured["command"]
     assert "hardware=cpu" in captured["command"]
     assert "--simulated_cpu_devices_count=8" in captured["command"]
     assert captured["env"]["JAX_PLATFORMS"] == "cpu"
@@ -211,3 +216,78 @@ def test_checkpoint_conversion_command_declares_cpu_hardware(
     assert manifest["runtime_environment"]["tpu_runtime_keys_present"] == []
     assert manifest["runtime_environment"]["libtpu_import_blocked"] is True
     assert manifest["runtime_environment"]["use_torch_xla"] == "0"
+
+
+def test_maxtext_converter_registers_qwen3_1_7b_before_delegating(
+    monkeypatch, capsys
+):
+    hf_ids = {}
+    delegated = {}
+
+    class Globals:
+        HF_IDS = hf_ids
+
+    monkeypatch.setitem(
+        sys.modules, "maxtext.utils.globals", Globals
+    )
+
+    def run_module(module, *, run_name, alter_sys):
+        delegated.update(
+            module=module,
+            run_name=run_name,
+            alter_sys=alter_sys,
+            hf_ids=dict(hf_ids),
+        )
+
+    monkeypatch.setattr(maxtext_conversion.runpy, "run_module", run_module)
+    monkeypatch.setattr(
+        maxtext_conversion,
+        "_validate_installed_conversion_support",
+        lambda model_names: {"all_tables": list(model_names)},
+    )
+    maxtext_conversion.main()
+
+    assert delegated == {
+        "module": "maxtext.checkpoint_conversion.to_maxtext",
+        "run_name": "__main__",
+        "alter_sys": True,
+        "hf_ids": {"qwen3-1.7b": "Qwen/Qwen3-1.7B"},
+    }
+    marker = capsys.readouterr().out
+    assert "RLCSD_MAXTEXT_HF_ID_COMPATIBILITY" in marker
+    assert '"qwen3-1.7b"' in marker
+    assert '"validated_tables"' in marker
+
+
+def test_maxtext_converter_rejects_conflicting_alias():
+    with pytest.raises(RuntimeError, match="unexpected value"):
+        maxtext_conversion._register_hf_id_compatibility(
+            {"qwen3-1.7b": "example/wrong-model"}
+        )
+
+
+def test_maxtext_converter_rejects_missing_conversion_table(
+    monkeypatch
+):
+    class Configs:
+        HF_MODEL_CONFIGS = {"qwen3-1.7b": object()}
+
+    class Mapping:
+        HOOK_FNS = {"qwen3-1.7b": object()}
+        PARAM_MAPPING = {}
+
+    monkeypatch.setitem(
+        sys.modules,
+        "maxtext.checkpoint_conversion.utils.hf_model_configs",
+        Configs,
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "maxtext.checkpoint_conversion.utils.param_mapping",
+        Mapping,
+    )
+
+    with pytest.raises(RuntimeError, match="param_mapping"):
+        maxtext_conversion._validate_installed_conversion_support(
+            ["qwen3-1.7b"]
+        )
