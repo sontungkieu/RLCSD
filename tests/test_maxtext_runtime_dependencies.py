@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import sys
 from pathlib import Path
 
 import pytest
@@ -83,19 +84,32 @@ def test_tpu_runtime_guard_rejects_libtpu_replacement():
         dependencies.require_unchanged_tpu_runtime(before, after)
 
 
-def test_config_import_smoke_emits_stepwise_progress(capsys):
+def test_config_discovery_smoke_does_not_import_maxtext(capsys):
     imported = []
+    discovered = []
 
     def fake_import(module_name):
         imported.append(module_name)
         return object()
 
-    result = config_import_smoke.run_import_smoke(fake_import)
+    def fake_discover(module_name):
+        discovered.append(module_name)
+        return object()
+
+    result = config_import_smoke.run_config_discovery_smoke(
+        fake_import,
+        fake_discover,
+    )
     output = capsys.readouterr().out
 
-    assert result == config_import_smoke.SMOKE_MODULES
-    assert imported == list(config_import_smoke.SMOKE_MODULES)
-    for module_name in config_import_smoke.SMOKE_MODULES:
+    assert result == (
+        config_import_smoke.SAFE_IMPORT_MODULES,
+        config_import_smoke.DISCOVERY_MODULES,
+    )
+    assert imported == list(config_import_smoke.SAFE_IMPORT_MODULES)
+    assert discovered == list(config_import_smoke.DISCOVERY_MODULES)
+    assert not set(imported) & set(config_import_smoke.DISCOVERY_MODULES)
+    for module_name in config_import_smoke.SAFE_IMPORT_MODULES:
         assert (
             f'RLCSD_MAXTEXT_IMPORT_START {{"module": "{module_name}"}}'
             in output
@@ -104,4 +118,37 @@ def test_config_import_smoke_emits_stepwise_progress(capsys):
             f'RLCSD_MAXTEXT_IMPORT_OK {{"module": "{module_name}"}}'
             in output
         )
+    for module_name in config_import_smoke.DISCOVERY_MODULES:
+        assert (
+            f'RLCSD_MAXTEXT_MODULE_SPEC_START {{"module": "{module_name}"}}'
+            in output
+        )
+        assert (
+            f'RLCSD_MAXTEXT_MODULE_SPEC_OK {{"module": "{module_name}"}}'
+            in output
+        )
+    assert '"runtime_import_executed": false' in output
     assert '"ok": true' in output
+
+
+def test_dotted_module_discovery_does_not_execute_parent(
+    tmp_path,
+    monkeypatch,
+):
+    package_root = tmp_path / "_rlcsd_spec_smoke"
+    configs_root = package_root / "configs"
+    configs_root.mkdir(parents=True)
+    (package_root / "__init__.py").write_text(
+        "raise AssertionError('parent package executed')\n",
+        encoding="utf-8",
+    )
+    (configs_root / "__init__.py").write_text("", encoding="utf-8")
+    (configs_root / "pyconfig.py").write_text("", encoding="utf-8")
+    monkeypatch.syspath_prepend(str(tmp_path))
+
+    spec = config_import_smoke._find_spec_without_import(
+        "_rlcsd_spec_smoke.configs.pyconfig"
+    )
+
+    assert spec is not None
+    assert "_rlcsd_spec_smoke" not in sys.modules
