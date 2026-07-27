@@ -337,7 +337,15 @@ def load_real_batch(
     return token_matrix, segment_ids, summary
 
 
-def create_parallel_config(case: BenchmarkCase) -> Any:
+def create_parallel_config(case: BenchmarkCase) -> Any | None:
+    if case.layout.pipeline_parallelism == 1:
+        if case.num_pipeline_microbatches != 1:
+            raise ValueError(
+                "Non-pipeline MaxText layouts require exactly one microbatch, "
+                f"got {case.num_pipeline_microbatches}."
+            )
+        return None
+
     from tunix.models.maxtext_parallelism import MaxTextPipelineConfig
 
     config = MaxTextPipelineConfig(
@@ -348,6 +356,35 @@ def create_parallel_config(case: BenchmarkCase) -> Any:
     )
     config.validate_batch_size(case.global_batch_size)
     return config
+
+
+def create_parallel_mesh(
+    case: BenchmarkCase,
+    *,
+    devices: list[Any],
+    parallel_config: Any | None,
+) -> Any:
+    if parallel_config is not None:
+        return parallel_config.create_mesh(devices=devices)
+
+    from tunix.models.maxtext_parallelism import MAXTEXT_MESH_AXIS_NAMES
+    from tunix.utils import mesh as mesh_lib
+
+    if len(devices) != case.layout.required_device_count:
+        raise ValueError(
+            f"{case.case_id} requires {case.layout.required_device_count} "
+            f"devices, got {len(devices)}."
+        )
+    axis_sizes = {
+        "stage": 1,
+        "tensor": case.layout.tensor_parallelism,
+    }
+    mesh_shape = tuple(axis_sizes.get(axis, 1) for axis in MAXTEXT_MESH_AXIS_NAMES)
+    return mesh_lib.create_mesh(
+        mesh_shape,
+        MAXTEXT_MESH_AXIS_NAMES,
+        devices=devices,
+    )
 
 
 def load_model(
@@ -371,7 +408,11 @@ def load_model(
         read_checkpoint_manifest(checkpoint_items, case)
 
     parallel_config = create_parallel_config(case)
-    mesh = parallel_config.create_mesh(devices=devices)
+    mesh = create_parallel_mesh(
+        case,
+        devices=devices,
+        parallel_config=parallel_config,
+    )
     with jax.set_mesh(mesh):
         model, resolved_path = automodel.AutoModel.from_pretrained(
             model_id=case.model.model_id,
@@ -383,6 +424,7 @@ def load_model(
             mesh=mesh,
             model_source=automodel.ModelSource.MAXTEXT,
             maxtext_pipeline_config=parallel_config,
+            **case.maxtext_pipeline_kwargs,
             per_device_batch_size=(case.global_batch_size / len(devices)),
             max_target_length=case.sequence_length,
             steps=1,

@@ -1,15 +1,16 @@
 from __future__ import annotations
 
-from contextlib import nullcontext
 import json
 import math
 import sys
 import types
+from contextlib import nullcontext
 from pathlib import Path
 
 import jax.numpy as jnp
 import pytest
 
+from benchmarks.maxtext_tpu import runtime
 from benchmarks.maxtext_tpu.audit import audit_payload
 from benchmarks.maxtext_tpu.matrix import (
     DATASET_REVISION,
@@ -18,7 +19,6 @@ from benchmarks.maxtext_tpu.matrix import (
     validate_repo_configs,
 )
 from benchmarks.maxtext_tpu.rlcsd_jax import rlcsd_policy_loss
-from benchmarks.maxtext_tpu import runtime
 from benchmarks.maxtext_tpu.runtime import read_checkpoint_manifest
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -164,6 +164,132 @@ def test_load_model_enables_maxtext_checkpoint_loading_only_when_needed(
     assert captured["model_path"] == (
         str(checkpoint_items.resolve()) if checkpoint_items else None
     )
+
+
+def test_original_tp8_uses_ordinary_maxtext_mesh_without_pipeline_config(
+    tmp_path,
+    monkeypatch,
+):
+    captured = {}
+    axis_names = (
+        "diloco",
+        "data",
+        "stage",
+        "fsdp",
+        "fsdp_transpose",
+        "context",
+        "context_autoregressive",
+        "tensor",
+        "tensor_sequence",
+        "expert",
+        "autoregressive",
+    )
+
+    class FakeAutoModel:
+        @staticmethod
+        def from_pretrained(**kwargs):
+            captured["model_kwargs"] = kwargs
+            return "model", kwargs["model_path"]
+
+    def fake_create_mesh(mesh_shape, mesh_axis_names, *, devices):
+        captured["mesh_shape"] = mesh_shape
+        captured["mesh_axis_names"] = mesh_axis_names
+        captured["devices"] = devices
+        return "ordinary-tp8-mesh"
+
+    fake_jax = types.ModuleType("jax")
+    fake_jax.set_mesh = lambda mesh: nullcontext()
+    fake_automodel = types.ModuleType("tunix.models.automodel")
+    fake_automodel.AutoModel = FakeAutoModel
+    fake_automodel.ModelSource = types.SimpleNamespace(MAXTEXT="maxtext")
+    fake_parallelism = types.ModuleType("tunix.models.maxtext_parallelism")
+    fake_parallelism.MAXTEXT_MESH_AXIS_NAMES = axis_names
+    fake_mesh = types.ModuleType("tunix.utils.mesh")
+    fake_mesh.create_mesh = fake_create_mesh
+    fake_utils = types.ModuleType("tunix.utils")
+    fake_utils.mesh = fake_mesh
+    fake_models = types.ModuleType("tunix.models")
+    fake_models.automodel = fake_automodel
+    fake_models.maxtext_parallelism = fake_parallelism
+    fake_tunix = types.ModuleType("tunix")
+    fake_tunix.models = fake_models
+    fake_tunix.utils = fake_utils
+
+    monkeypatch.setitem(sys.modules, "jax", fake_jax)
+    monkeypatch.setitem(sys.modules, "tunix", fake_tunix)
+    monkeypatch.setitem(sys.modules, "tunix.models", fake_models)
+    monkeypatch.setitem(
+        sys.modules,
+        "tunix.models.automodel",
+        fake_automodel,
+    )
+    monkeypatch.setitem(
+        sys.modules,
+        "tunix.models.maxtext_parallelism",
+        fake_parallelism,
+    )
+    monkeypatch.setitem(sys.modules, "tunix.utils", fake_utils)
+    monkeypatch.setitem(sys.modules, "tunix.utils.mesh", fake_mesh)
+    monkeypatch.setattr(
+        runtime,
+        "read_checkpoint_manifest",
+        lambda checkpoint_items, case: {},
+    )
+
+    checkpoint_items = tmp_path / "checkpoint" / "0" / "items"
+    checkpoint_items.mkdir(parents=True)
+    case = get_case("qwen3_1_7b-original-rlcsd-tp8")
+    devices = [f"tpu-{index}" for index in range(8)]
+
+    model, mesh, _, weights = runtime.load_model(
+        case,
+        devices=devices,
+        checkpoint_items=checkpoint_items,
+        allow_random_weights=False,
+    )
+
+    assert model == "model"
+    assert mesh == "ordinary-tp8-mesh"
+    assert weights == "converted_pretrained_checkpoint"
+    assert captured["mesh_axis_names"] == axis_names
+    assert captured["mesh_shape"][axis_names.index("stage")] == 1
+    assert captured["mesh_shape"][axis_names.index("tensor")] == 8
+    assert captured["devices"] == devices
+    assert captured["model_kwargs"]["maxtext_pipeline_config"] is None
+    assert captured["model_kwargs"]["ici_pipeline_parallelism"] == 1
+    assert captured["model_kwargs"]["ici_tensor_parallelism"] == 8
+
+
+def test_pipeline_layout_still_uses_tunix_pipeline_config(monkeypatch):
+    captured = {}
+
+    class FakePipelineConfig:
+        def __init__(self, **kwargs):
+            captured["kwargs"] = kwargs
+
+        def validate_batch_size(self, global_batch_size):
+            captured["global_batch_size"] = global_batch_size
+
+    fake_parallelism = types.ModuleType("tunix.models.maxtext_parallelism")
+    fake_parallelism.MaxTextPipelineConfig = FakePipelineConfig
+    fake_models = types.ModuleType("tunix.models")
+    fake_models.maxtext_parallelism = fake_parallelism
+    fake_tunix = types.ModuleType("tunix")
+    fake_tunix.models = fake_models
+    monkeypatch.setitem(sys.modules, "tunix", fake_tunix)
+    monkeypatch.setitem(sys.modules, "tunix.models", fake_models)
+    monkeypatch.setitem(
+        sys.modules,
+        "tunix.models.maxtext_parallelism",
+        fake_parallelism,
+    )
+
+    config = runtime.create_parallel_config(get_case("qwen3_1_7b-bs12-pp2xtp4"))
+
+    assert isinstance(config, FakePipelineConfig)
+    assert captured["kwargs"]["pipeline_parallelism"] == 2
+    assert captured["kwargs"]["tensor_parallelism"] == 4
+    assert captured["global_batch_size"] == 12
 
 
 def test_rlcsd_jax_zero_contrast_reduces_to_ppo_path():
