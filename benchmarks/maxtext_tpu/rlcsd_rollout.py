@@ -14,6 +14,7 @@ import dataclasses
 import hashlib
 import json
 import math
+import os
 import time
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
@@ -385,6 +386,12 @@ def create_offline_engine(
 ) -> Any:
     """Instantiate the MaxText engine lazily so CPU validation stays light."""
 
+    # MaxText 0.2.3's OfflineEngine can run without the optional Jetstream
+    # serving package when its documented cloud-decoupled mode is enabled.
+    # RLCSD supplies both the tokenizer and EOS ids below, so the stubbed
+    # serving API only provides ResultTokens while the real MaxText model,
+    # KV-cache prefill, and autoregressive decode remain active.
+    os.environ["DECOUPLE_GCLOUD"] = "TRUE"
     import jax
     from maxtext.inference.offline_engine import OfflineEngine
 

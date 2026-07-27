@@ -104,6 +104,12 @@ python -m benchmarks.maxtext_tpu.rlcsd_rollout \
   --output-dir outputs/maxtext_tpu/original_rlcsd
 ```
 
+The entrypoint enables MaxText's `DECOUPLE_GCLOUD=TRUE` mode before importing
+`OfflineEngine`. This avoids an undeclared optional Jetstream serving
+dependency; RLCSD still runs the real MaxText model, KV-cache prefill and
+autoregressive decode, and supplies its Hugging Face tokenizer and EOS ids
+directly.
+
 Then run every valid PPO mini-batch. Do not set `--max-updates` for auditable
 evidence; that option is diagnostic only:
 

@@ -1,6 +1,9 @@
 from __future__ import annotations
 
 import dataclasses
+import os
+import sys
+import types
 from pathlib import Path
 
 import numpy as np
@@ -20,6 +23,7 @@ from benchmarks.maxtext_tpu.rlcsd_data import (
 )
 from benchmarks.maxtext_tpu.rlcsd_rollout import (
     RolloutSample,
+    create_offline_engine,
     validate_rollout_samples,
 )
 from benchmarks.maxtext_tpu.rlcsd_train import (
@@ -108,6 +112,49 @@ def test_original_case_is_not_the_seq512_canary_matrix():
     assert canary.sequence_length == 512
     assert canary.measurement_profile == "core_step_canary"
     assert canary.as_dict()["is_original_rlcsd_config"] is False
+
+
+def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
+    observed = {}
+
+    class FakeOfflineEngine:
+        def __init__(self, **kwargs):
+            observed["decoupled_at_import"] = os.environ.get("DECOUPLE_GCLOUD")
+            observed["kwargs"] = kwargs
+
+    offline_engine_module = types.ModuleType(
+        "maxtext.inference.offline_engine"
+    )
+    offline_engine_module.OfflineEngine = FakeOfflineEngine
+    monkeypatch.setitem(
+        sys.modules,
+        "maxtext.inference.offline_engine",
+        offline_engine_module,
+    )
+    monkeypatch.delenv("DECOUPLE_GCLOUD", raising=False)
+
+    class Tokenizer:
+        eos_token_id = 1
+
+        @staticmethod
+        def convert_tokens_to_ids(token):
+            assert token == "<|im_end|>"
+            return 2
+
+    engine = create_offline_engine(
+        object(),
+        Tokenizer(),
+        seed=7,
+        params="params",
+        mesh="mesh",
+    )
+
+    assert isinstance(engine, FakeOfflineEngine)
+    assert observed["decoupled_at_import"] == "TRUE"
+    assert observed["kwargs"]["eos_ids"] == [1, 2]
+    assert observed["kwargs"]["tokenizer"].eos_token_id == 1
+    assert observed["kwargs"]["params"] == "params"
+    assert observed["kwargs"]["mesh"] == "mesh"
 
 
 def test_rollout_gate_requires_exactly_64_groups_of_8():
