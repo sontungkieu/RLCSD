@@ -112,8 +112,14 @@ An evidence-gated TPU v5e-8 integration is under
 [`benchmarks/maxtext_tpu`](benchmarks/maxtext_tpu/README.md). It provides the
 18-case Qwen3 PP/TP matrix, checkpoint conversion and logits parity, a
 full-sequence forward benchmark, a forward/backward/AdamW core-step benchmark,
-and a JAX port of the RLCSD policy-loss kernel. Decode/KV-cache and end-to-end
-RLCSD remain explicitly unsupported until their runtime gates are implemented.
+and a JAX port of the RLCSD policy-loss kernel. The 18 matrix cases are
+explicit sequence-512 infrastructure canaries. A separate original Qwen3-1.7B
+profile now connects MaxText KV-cache rollout, verifier scoring,
+positive/negative snapshot-teacher contexts, K-marginal RLCSD loss, backward
+and AdamW under the original 2048/16384/40960 token limits. The original
+30-epoch loop is checkpoint/resume capable because it cannot fit in one Kaggle
+session. It remains an implementation awaiting terminal multi-session TPU
+evidence, not a completed end-to-end reproduction.
 
 ## Install
 

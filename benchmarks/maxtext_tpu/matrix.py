@@ -14,6 +14,9 @@ from pathlib import Path
 
 DATASET_REPO = "Leyiii/RLCSD"
 DATASET_REVISION = "33d7de919af5b03257ff92c30303fddf9afdda4a"
+# This is intentionally a short infrastructure canary, not the original RLCSD
+# train sequence contract (2048 prompt + 16384 completion).  The original
+# contract is executable in ``rlcsd_contract.py``.
 SEQUENCE_LENGTH = 512
 EXPECTED_TPU_DEVICES = 8
 TUNIX_PIPELINE_COMMIT = "50f5752a17edec56e2aa30aabfc03859949adf6f"
@@ -46,9 +49,13 @@ class BenchmarkCase:
     global_batch_size: int
     sequence_length: int
     num_pipeline_microbatches: int
+    measurement_profile: str = "core_step_canary"
+    case_name: str | None = None
 
     @property
     def case_id(self) -> str:
+        if self.case_name is not None:
+            return self.case_name
         return (
             f"{self.model.key}-bs{self.global_batch_size}-{self.layout.label.lower()}"
         )
@@ -101,6 +108,8 @@ class BenchmarkCase:
             "dataset_file": self.model.dataset_file,
             "global_batch_size": self.global_batch_size,
             "sequence_length": self.sequence_length,
+            "measurement_profile": self.measurement_profile,
+            "is_original_rlcsd_config": (self.measurement_profile == "original_rlcsd"),
             "num_decoder_layers": self.model.num_decoder_layers,
             "parallelism": {
                 "label": self.layout.label,
@@ -153,6 +162,25 @@ LAYOUTS = (
 
 BATCH_SIZES = (12, 16, 64)
 
+ORIGINAL_RLCSD_CASE = BenchmarkCase(
+    model=MODELS[0],
+    layout=LayoutSpec(
+        label="TP8",
+        pipeline_parallelism=1,
+        tensor_parallelism=8,
+    ),
+    # This is the actor PPO mini-batch, not the 64-prompt rollout batch.
+    global_batch_size=16,
+    # The teacher-context token budget is the largest model input in the
+    # original config.  Actual policy inputs remain bounded by 18432 and are
+    # dynamically packed rather than densely padded to this value.
+    sequence_length=40960,
+    num_pipeline_microbatches=1,
+    measurement_profile="original_rlcsd",
+    case_name="qwen3_1_7b-original-rlcsd-tp8",
+)
+ORIGINAL_RLCSD_CASE.validate()
+
 
 def _microbatch_count(layout: LayoutSpec, batch_size: int) -> int:
     # PP4xTP2 used eight microbatches in the batch-16/64 forward runs. Batch
@@ -179,10 +207,10 @@ def iter_cases() -> Iterable[BenchmarkCase]:
 
 
 def get_case(case_id: str) -> BenchmarkCase:
-    for case in iter_cases():
+    for case in (*iter_cases(), ORIGINAL_RLCSD_CASE):
         if case.case_id == case_id:
             return case
-    choices = ", ".join(case.case_id for case in iter_cases())
+    choices = ", ".join(case.case_id for case in (*iter_cases(), ORIGINAL_RLCSD_CASE))
     raise KeyError(f"Unknown case {case_id!r}. Available cases: {choices}")
 
 

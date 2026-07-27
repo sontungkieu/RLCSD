@@ -91,17 +91,23 @@ def main() -> None:
         checkpoint_items=args.checkpoint_items,
         allow_random_weights=False,
     )
+    # Parity needs one real prompt, not the case's dense training shape.  This
+    # is essential for the original 40,960-token model budget: materializing
+    # [16, 40960, vocab] logits would turn a one-position parity check into an
+    # unrelated memory stress test.
+    parity_tokens = token_matrix[:1, :sample_width]
+    parity_segments = segment_matrix[:1, :sample_width]
     positions = jnp.broadcast_to(
-        jnp.arange(case.sequence_length, dtype=jnp.int32),
-        token_matrix.shape,
+        jnp.arange(sample_width, dtype=jnp.int32),
+        parity_tokens.shape,
     )
     with jax.set_mesh(mesh):
         maxtext_outputs, _ = maxtext_model(
-            jnp.asarray(token_matrix),
+            jnp.asarray(parity_tokens),
             positions,
             None,
             None,
-            decoder_segment_ids=jnp.asarray(segment_matrix),
+            decoder_segment_ids=jnp.asarray(parity_segments),
         )
         maxtext_logits = np.asarray(
             jax.device_get(maxtext_outputs[0, last_index]),
@@ -154,6 +160,8 @@ def main() -> None:
             "dataset_row_index": dataset["selected_prompts"][0]["row_index"],
             "prompt_token_count": sample_width,
             "compared_position": last_index,
+            "maxtext_forward_batch_size": 1,
+            "maxtext_forward_sequence_length": sample_width,
         },
         "metrics": metrics,
         "thresholds": thresholds,
