@@ -15,7 +15,9 @@ import hashlib
 import json
 import math
 import os
+import sys
 import time
+import types
 from collections.abc import Iterable, Mapping, Sequence
 from pathlib import Path
 from typing import Any
@@ -388,10 +390,14 @@ def create_offline_engine(
 
     # MaxText 0.2.3's OfflineEngine can run without the optional Jetstream
     # serving package when its documented cloud-decoupled mode is enabled.
-    # RLCSD supplies both the tokenizer and EOS ids below, so the stubbed
-    # serving API only provides ResultTokens while the real MaxText model,
-    # KV-cache prefill, and autoregressive decode remain active.
+    # Its OfflineEngine still imports prefill_packing eagerly even when batch
+    # prefill is disabled, while that module intentionally rejects decoupled
+    # mode. Install the non-packed processor used by OfflineEngine's default
+    # path before importing the engine; packed prefill remains fail-fast.
+    # RLCSD supplies both the tokenizer and EOS ids below, while the real
+    # MaxText model, KV-cache prefill, and autoregressive decode remain active.
     os.environ["DECOUPLE_GCLOUD"] = "TRUE"
+    _install_decoupled_prefill_compat()
     import jax
     from maxtext.inference.offline_engine import OfflineEngine
 
@@ -418,6 +424,60 @@ def create_offline_engine(
         params=params,
         mesh=mesh,
     )
+
+
+def _install_decoupled_prefill_compat() -> None:
+    """Provide OfflineEngine's non-packed prefill API without Jetstream."""
+
+    module_name = "maxtext.input_pipeline.packing.prefill_packing"
+    if module_name in sys.modules:
+        return
+
+    compat_module = types.ModuleType(module_name)
+
+    class PrefillProcessor:
+        """Minimal stock-compatible processor for non-packed prefill."""
+
+        def __init__(self, engine: Any):
+            self.engine = engine
+
+        def _process(
+            self,
+            params: Any,
+            tokens: Any,
+            slot: int,
+            true_length: int,
+            decode_state: Any,
+            rng: Any,
+            return_prompt_logp: bool = False,
+        ) -> tuple[Any, Any]:
+            prefill_result, first_token = self.engine.prefill(
+                params=params,
+                padded_tokens=tokens,
+                true_length=true_length,
+                rng=rng,
+                return_prompt_logp=return_prompt_logp,
+            )
+            decode_state = self.engine.insert(
+                prefill_result,
+                decode_state,
+                slot,
+            )
+            if return_prompt_logp:
+                decode_state["prompt_logp"] = prefill_result["prompt_logp"]
+            return first_token, decode_state
+
+    class BatchedPrefillProcessor:
+        def __init__(self, *_: Any, **__: Any):
+            raise RuntimeError(
+                "Batch prefill requires Jetstream and is disabled for the "
+                "RLCSD DECOUPLE_GCLOUD rollout path."
+            )
+
+    compat_module.PrefillProcessor = PrefillProcessor
+    compat_module.BatchedPrefillProcessor = BatchedPrefillProcessor
+    compat_module._RLCSD_DECOUPLED_COMPAT = True
+    sys.modules[module_name] = compat_module
 
 
 def generate_rollout_samples(

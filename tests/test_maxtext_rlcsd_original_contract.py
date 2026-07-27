@@ -7,6 +7,7 @@ import types
 from pathlib import Path
 
 import numpy as np
+import pytest
 
 from benchmarks.maxtext_tpu.audit import audit_payload
 from benchmarks.maxtext_tpu.matrix import ORIGINAL_RLCSD_CASE, get_case
@@ -23,6 +24,7 @@ from benchmarks.maxtext_tpu.rlcsd_data import (
 )
 from benchmarks.maxtext_tpu.rlcsd_rollout import (
     RolloutSample,
+    _install_decoupled_prefill_compat,
     create_offline_engine,
     validate_rollout_samples,
 )
@@ -155,6 +157,54 @@ def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
     assert observed["kwargs"]["tokenizer"].eos_token_id == 1
     assert observed["kwargs"]["params"] == "params"
     assert observed["kwargs"]["mesh"] == "mesh"
+
+
+def test_decoupled_prefill_compat_matches_offline_engine_default_path(
+    monkeypatch,
+):
+    module_name = "maxtext.input_pipeline.packing.prefill_packing"
+    monkeypatch.delitem(sys.modules, module_name, raising=False)
+    _install_decoupled_prefill_compat()
+    module = sys.modules[module_name]
+
+    class Engine:
+        @staticmethod
+        def prefill(**kwargs):
+            assert kwargs == {
+                "params": "params",
+                "padded_tokens": "tokens",
+                "true_length": 3,
+                "rng": "rng",
+                "return_prompt_logp": True,
+            }
+            return {"prompt_logp": "prompt-logp"}, "first-token"
+
+        @staticmethod
+        def insert(prefill_result, decode_state, slot):
+            assert prefill_result == {"prompt_logp": "prompt-logp"}
+            assert slot == 5
+            return {**decode_state, "inserted": True}
+
+    processor = module.PrefillProcessor(Engine())
+    first_token, decode_state = processor._process(
+        "params",
+        "tokens",
+        5,
+        3,
+        {"state": True},
+        "rng",
+        return_prompt_logp=True,
+    )
+
+    assert module._RLCSD_DECOUPLED_COMPAT is True
+    assert first_token == "first-token"
+    assert decode_state == {
+        "state": True,
+        "inserted": True,
+        "prompt_logp": "prompt-logp",
+    }
+    with pytest.raises(RuntimeError, match="Batch prefill requires Jetstream"):
+        module.BatchedPrefillProcessor(Engine())
 
 
 def test_rollout_gate_requires_exactly_64_groups_of_8():

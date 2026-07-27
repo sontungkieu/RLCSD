@@ -106,9 +106,12 @@ python -m benchmarks.maxtext_tpu.rlcsd_rollout \
 
 The entrypoint enables MaxText's `DECOUPLE_GCLOUD=TRUE` mode before importing
 `OfflineEngine`. This avoids an undeclared optional Jetstream serving
-dependency; RLCSD still runs the real MaxText model, KV-cache prefill and
-autoregressive decode, and supplies its Hugging Face tokenizer and EOS ids
-directly.
+dependency. Because MaxText 0.2.3 imports its Jetstream-dependent packed
+prefill module even when packed prefill is disabled, RLCSD installs a narrow
+compatibility module for the stock non-packed `PrefillProcessor` API and keeps
+packed prefill fail-fast. The rollout still runs the real MaxText model,
+KV-cache prefill and autoregressive decode, and supplies its Hugging Face
+tokenizer and EOS ids directly.
 
 Then run every valid PPO mini-batch. Do not set `--max-updates` for auditable
 evidence; that option is diagnostic only:
