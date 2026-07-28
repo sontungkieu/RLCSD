@@ -40,6 +40,7 @@ from benchmarks.maxtext_tpu.rlcsd_rollout import (
     create_offline_engine,
     generate_rollout_samples,
     load_original_prompt_records,
+    update_offline_engine_params,
 )
 from benchmarks.maxtext_tpu.runtime import (
     _normalize_token_ids,
@@ -723,7 +724,7 @@ def main() -> None:
             )
             session_rollout_batches += 1
             _, current_params, _ = nnx.split(model, nnx.Param, ...)
-            train_engine.update_params(current_params)
+            update_offline_engine_params(train_engine, current_params)
             if progress.rollout_step % contract.save_steps == 0:
                 progress.periodic_checkpoint_steps.append(progress.rollout_step)
             if progress.rollout_step % contract.eval_steps == 0:

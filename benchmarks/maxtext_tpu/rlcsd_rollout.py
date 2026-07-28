@@ -421,9 +421,26 @@ def create_offline_engine(
         min_decode_steps=1,
         enable_batch_prefill=False,
         rng=jax.random.PRNGKey(seed),
-        params=params,
+        params=_as_maxtext_inference_params(params),
         mesh=mesh,
     )
+
+
+def _as_maxtext_inference_params(params: Any | None) -> Any | None:
+    """Convert Flax NNX parameter state to MaxEngine's pure-dict pytree."""
+
+    if params is None:
+        return None
+    to_pure_dict = getattr(params, "to_pure_dict", None)
+    if callable(to_pure_dict):
+        return to_pure_dict()
+    return params
+
+
+def update_offline_engine_params(engine: Any, params: Any) -> None:
+    """Refresh rollout weights using the pytree shape MaxEngine expects."""
+
+    engine.update_params(_as_maxtext_inference_params(params))
 
 
 def _install_decoupled_prefill_compat() -> None:

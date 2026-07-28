@@ -26,6 +26,7 @@ from benchmarks.maxtext_tpu.rlcsd_rollout import (
     RolloutSample,
     _install_decoupled_prefill_compat,
     create_offline_engine,
+    update_offline_engine_params,
     validate_rollout_samples,
 )
 from benchmarks.maxtext_tpu.rlcsd_train import (
@@ -119,6 +120,14 @@ def test_original_case_is_not_the_seq512_canary_matrix():
 def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
     observed = {}
 
+    class FakeNnxState:
+        def __init__(self):
+            self.to_pure_dict_calls = 0
+
+        def to_pure_dict(self):
+            self.to_pure_dict_calls += 1
+            return {"decoder": {"weight": "array"}}
+
     class FakeOfflineEngine:
         def __init__(self, **kwargs):
             observed["decoupled_at_import"] = os.environ.get("DECOUPLE_GCLOUD")
@@ -143,11 +152,12 @@ def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
             assert token == "<|im_end|>"
             return 2
 
+    params = FakeNnxState()
     engine = create_offline_engine(
         object(),
         Tokenizer(),
         seed=7,
-        params="params",
+        params=params,
         mesh="mesh",
     )
 
@@ -155,8 +165,29 @@ def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
     assert observed["decoupled_at_import"] == "TRUE"
     assert observed["kwargs"]["eos_ids"] == [1, 2]
     assert observed["kwargs"]["tokenizer"].eos_token_id == 1
-    assert observed["kwargs"]["params"] == "params"
+    assert observed["kwargs"]["params"] == {"decoder": {"weight": "array"}}
+    assert params.to_pure_dict_calls == 1
     assert observed["kwargs"]["mesh"] == "mesh"
+
+
+def test_offline_engine_param_refresh_converts_nnx_state_to_pure_dict():
+    observed = {}
+
+    class FakeNnxState:
+        @staticmethod
+        def to_pure_dict():
+            return {"decoder": {"weight": "updated-array"}}
+
+    class Engine:
+        @staticmethod
+        def update_params(params):
+            observed["params"] = params
+
+    update_offline_engine_params(Engine(), FakeNnxState())
+
+    assert observed["params"] == {
+        "decoder": {"weight": "updated-array"}
+    }
 
 
 def test_decoupled_prefill_compat_matches_offline_engine_default_path(
