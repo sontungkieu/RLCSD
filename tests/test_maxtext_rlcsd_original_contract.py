@@ -25,6 +25,7 @@ from benchmarks.maxtext_tpu.rlcsd_data import (
 from benchmarks.maxtext_tpu.rlcsd_rollout import (
     RolloutSample,
     _install_decoupled_prefill_compat,
+    _register_result_tokens_pytree,
     create_offline_engine,
     update_offline_engine_params,
     validate_rollout_samples,
@@ -252,6 +253,51 @@ def test_decoupled_prefill_compat_matches_offline_engine_default_path(
     }
     with pytest.raises(RuntimeError, match="Batch prefill requires Jetstream"):
         module.BatchedPrefillProcessor(Engine())
+
+
+def test_decoupled_result_tokens_are_valid_jax_jit_outputs():
+    jax = pytest.importorskip("jax")
+    jnp = pytest.importorskip("jax.numpy")
+
+    class ResultTokens:
+        def __init__(
+            self,
+            *,
+            data,
+            tokens_idx,
+            valid_idx,
+            length_idx,
+            log_prob,
+            samples_per_slot,
+        ):
+            self.data = data
+            self.tokens_idx = tokens_idx
+            self.valid_idx = valid_idx
+            self.length_idx = length_idx
+            self.log_prob = log_prob
+            self.samples_per_slot = samples_per_slot
+
+    assert _register_result_tokens_pytree(ResultTokens, jax.tree_util) is True
+    assert _register_result_tokens_pytree(ResultTokens, jax.tree_util) is False
+
+    @jax.jit
+    def build_result(value):
+        return ResultTokens(
+            data=value + 1,
+            tokens_idx=(0, 1),
+            valid_idx=(1, 2),
+            length_idx=(2, 3),
+            log_prob=value - 1,
+            samples_per_slot=1,
+        )
+
+    result = build_result(jnp.asarray([[2]], dtype=jnp.int32))
+    assert result.data.tolist() == [[3]]
+    assert result.log_prob.tolist() == [[1]]
+    assert result.tokens_idx == (0, 1)
+    assert result.valid_idx == (1, 2)
+    assert result.length_idx == (2, 3)
+    assert result.samples_per_slot == 1
 
 
 def test_rollout_gate_requires_exactly_64_groups_of_8():

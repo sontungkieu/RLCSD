@@ -401,6 +401,8 @@ def create_offline_engine(
     import jax
     from maxtext.inference.offline_engine import OfflineEngine
 
+    _register_decoupled_result_tokens_pytree()
+
     eos_ids = sorted(
         {
             int(value)
@@ -496,6 +498,62 @@ def _install_decoupled_prefill_compat() -> None:
     compat_module.BatchedPrefillProcessor = BatchedPrefillProcessor
     compat_module._RLCSD_DECOUPLED_COMPAT = True
     sys.modules[module_name] = compat_module
+
+
+def _register_result_tokens_pytree(
+    result_tokens_type: type[Any],
+    tree_util: Any,
+) -> bool:
+    """Register MaxText's decoupled ResultTokens container with JAX."""
+
+    marker = "_RLCSD_JAX_PYTREE_REGISTERED"
+    if getattr(result_tokens_type, marker, False):
+        return False
+
+    dynamic_fields = ("data", "log_prob")
+    static_fields = (
+        "tokens_idx",
+        "valid_idx",
+        "length_idx",
+        "samples_per_slot",
+    )
+
+    def flatten(value: Any) -> tuple[tuple[Any, ...], tuple[Any, ...]]:
+        return (
+            tuple(getattr(value, field) for field in dynamic_fields),
+            tuple(getattr(value, field) for field in static_fields),
+        )
+
+    def unflatten(
+        static_values: tuple[Any, ...],
+        dynamic_values: tuple[Any, ...],
+    ) -> Any:
+        values = dict(zip(dynamic_fields, dynamic_values, strict=True))
+        values.update(zip(static_fields, static_values, strict=True))
+        return result_tokens_type(**values)
+
+    tree_util.register_pytree_node(
+        result_tokens_type,
+        flatten,
+        unflatten,
+    )
+    setattr(result_tokens_type, marker, True)
+    return True
+
+
+def _register_decoupled_result_tokens_pytree() -> bool:
+    """Make MaxText 0.2.3's Jetstream stub a valid JIT output."""
+
+    import jax
+    from maxtext.inference.maxengine import maxengine
+
+    engine_api = maxengine.engine_api
+    if not getattr(engine_api, "_IS_STUB", False):
+        return False
+    return _register_result_tokens_pytree(
+        engine_api.ResultTokens,
+        jax.tree_util,
+    )
 
 
 def generate_rollout_samples(
