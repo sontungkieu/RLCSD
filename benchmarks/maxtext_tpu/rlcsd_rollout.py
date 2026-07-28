@@ -427,14 +427,15 @@ def create_offline_engine(
 
 
 def _as_maxtext_inference_params(params: Any | None) -> Any | None:
-    """Convert Flax NNX parameter state to MaxEngine's pure-dict pytree."""
+    """Convert Tunix NNX adapter state to MaxEngine's Linen param tree."""
 
     if params is None:
         return None
     to_pure_dict = getattr(params, "to_pure_dict", None)
-    if callable(to_pure_dict):
-        return to_pure_dict()
-    return params
+    pure_params = to_pure_dict() if callable(to_pure_dict) else params
+    if isinstance(pure_params, Mapping) and set(pure_params) == {"base"}:
+        return {"params": pure_params["base"]}
+    return pure_params
 
 
 def update_offline_engine_params(engine: Any, params: Any) -> None:

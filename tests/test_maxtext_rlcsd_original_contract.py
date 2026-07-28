@@ -126,7 +126,7 @@ def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
 
         def to_pure_dict(self):
             self.to_pure_dict_calls += 1
-            return {"decoder": {"weight": "array"}}
+            return {"base": {"decoder": {"weight": "array"}}}
 
     class FakeOfflineEngine:
         def __init__(self, **kwargs):
@@ -165,7 +165,9 @@ def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
     assert observed["decoupled_at_import"] == "TRUE"
     assert observed["kwargs"]["eos_ids"] == [1, 2]
     assert observed["kwargs"]["tokenizer"].eos_token_id == 1
-    assert observed["kwargs"]["params"] == {"decoder": {"weight": "array"}}
+    assert observed["kwargs"]["params"] == {
+        "params": {"decoder": {"weight": "array"}}
+    }
     assert params.to_pure_dict_calls == 1
     assert observed["kwargs"]["mesh"] == "mesh"
 
@@ -176,7 +178,7 @@ def test_offline_engine_param_refresh_converts_nnx_state_to_pure_dict():
     class FakeNnxState:
         @staticmethod
         def to_pure_dict():
-            return {"decoder": {"weight": "updated-array"}}
+            return {"base": {"decoder": {"weight": "updated-array"}}}
 
     class Engine:
         @staticmethod
@@ -186,8 +188,22 @@ def test_offline_engine_param_refresh_converts_nnx_state_to_pure_dict():
     update_offline_engine_params(Engine(), FakeNnxState())
 
     assert observed["params"] == {
-        "decoder": {"weight": "updated-array"}
+        "params": {"decoder": {"weight": "updated-array"}}
     }
+
+
+def test_offline_engine_param_refresh_preserves_linen_params_tree():
+    observed = {}
+    linen_params = {"params": {"decoder": {"weight": "array"}}}
+
+    class Engine:
+        @staticmethod
+        def update_params(params):
+            observed["params"] = params
+
+    update_offline_engine_params(Engine(), linen_params)
+
+    assert observed["params"] is linen_params
 
 
 def test_decoupled_prefill_compat_matches_offline_engine_default_path(
