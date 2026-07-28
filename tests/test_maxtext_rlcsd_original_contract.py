@@ -120,6 +120,8 @@ def test_original_case_is_not_the_seq512_canary_matrix():
 
 
 def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
+    import benchmarks.maxtext_tpu.rlcsd_rollout as rollout_module
+
     observed = {}
 
     class FakeNnxState:
@@ -135,14 +137,23 @@ def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):
             observed["decoupled_at_import"] = os.environ.get("DECOUPLE_GCLOUD")
             observed["kwargs"] = kwargs
 
+    class FakeInferenceWorker:
+        pass
+
     offline_engine_module = types.ModuleType(
         "maxtext.inference.offline_engine"
     )
+    offline_engine_module.InferenceWorker = FakeInferenceWorker
     offline_engine_module.OfflineEngine = FakeOfflineEngine
     monkeypatch.setitem(
         sys.modules,
         "maxtext.inference.offline_engine",
         offline_engine_module,
+    )
+    monkeypatch.setattr(
+        rollout_module,
+        "_register_decoupled_result_tokens_pytree",
+        lambda: True,
     )
     monkeypatch.delenv("DECOUPLE_GCLOUD", raising=False)
 
@@ -327,6 +338,81 @@ def test_offline_engine_detokenization_accepts_size_one_token_arrays():
     assert _install_offline_engine_size_one_int_compat(OfflineEngine) is True
     assert _install_offline_engine_size_one_int_compat(OfflineEngine) is False
     assert OfflineEngine.background_detokenization() == 17
+
+
+def test_offline_engine_compat_targets_worker_without_gating_result_tokens(
+    monkeypatch,
+):
+    import benchmarks.maxtext_tpu.rlcsd_rollout as rollout_module
+
+    class FutureNumpyArray:
+        shape = (1,)
+        size = 1
+
+        @staticmethod
+        def item():
+            return 23
+
+        @staticmethod
+        def __int__():
+            raise TypeError(
+                "only 0-dimensional arrays can be converted to Python scalars"
+            )
+
+    class InferenceWorker:
+        @staticmethod
+        def background_detokenization():
+            return int(FutureNumpyArray())
+
+    class OfflineEngine:
+        def __init__(self, **kwargs):
+            self.kwargs = kwargs
+
+    offline_engine_module = types.ModuleType(
+        "maxtext.inference.offline_engine"
+    )
+    offline_engine_module.InferenceWorker = InferenceWorker
+    offline_engine_module.OfflineEngine = OfflineEngine
+    maxtext_package = types.ModuleType("maxtext")
+    maxtext_package.__path__ = []
+    inference_package = types.ModuleType("maxtext.inference")
+    inference_package.__path__ = []
+    fake_jax = types.ModuleType("jax")
+    fake_jax.random = types.SimpleNamespace(
+        PRNGKey=lambda seed: ("fake-prng-key", seed)
+    )
+
+    fake_modules = {
+        "jax": fake_jax,
+        "maxtext": maxtext_package,
+        "maxtext.inference": inference_package,
+        "maxtext.inference.offline_engine": offline_engine_module,
+    }
+    for name, module in fake_modules.items():
+        monkeypatch.setitem(sys.modules, name, module)
+    registrations = []
+    monkeypatch.setattr(
+        rollout_module,
+        "_register_decoupled_result_tokens_pytree",
+        lambda: registrations.append(True) or True,
+    )
+
+    class Tokenizer:
+        eos_token_id = 1
+
+        @staticmethod
+        def convert_tokens_to_ids(_token):
+            return 2
+
+    engine = create_offline_engine(
+        types.SimpleNamespace(),
+        Tokenizer(),
+        seed=7,
+    )
+
+    assert registrations == [True]
+    assert InferenceWorker.background_detokenization() == 23
+    assert isinstance(engine, OfflineEngine)
 
 
 def test_rollout_gate_requires_exactly_64_groups_of_8():

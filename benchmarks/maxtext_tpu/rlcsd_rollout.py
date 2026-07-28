@@ -400,11 +400,11 @@ def create_offline_engine(
     os.environ["DECOUPLE_GCLOUD"] = "TRUE"
     _install_decoupled_prefill_compat()
     import jax
-    from maxtext.inference.offline_engine import OfflineEngine
+    from maxtext.inference.offline_engine import InferenceWorker, OfflineEngine
 
-    if hasattr(OfflineEngine, "background_detokenization"):
-        _install_offline_engine_size_one_int_compat(OfflineEngine)
-        _register_decoupled_result_tokens_pytree()
+    _register_decoupled_result_tokens_pytree()
+    if hasattr(InferenceWorker, "background_detokenization"):
+        _install_offline_engine_size_one_int_compat(InferenceWorker)
 
     eos_ids = sorted(
         {
