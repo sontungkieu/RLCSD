@@ -10,6 +10,7 @@ use all eight v5e chips without claiming unsupported concurrent colocation.
 from __future__ import annotations
 
 import argparse
+import builtins
 import dataclasses
 import hashlib
 import json
@@ -401,7 +402,9 @@ def create_offline_engine(
     import jax
     from maxtext.inference.offline_engine import OfflineEngine
 
-    _register_decoupled_result_tokens_pytree()
+    if hasattr(OfflineEngine, "background_detokenization"):
+        _install_offline_engine_size_one_int_compat(OfflineEngine)
+        _register_decoupled_result_tokens_pytree()
 
     eos_ids = sorted(
         {
@@ -554,6 +557,55 @@ def _register_decoupled_result_tokens_pytree() -> bool:
         engine_api.ResultTokens,
         jax.tree_util,
     )
+
+
+def _size_one_array_compatible_int(value: Any, *args: Any) -> int:
+    """Keep MaxText 0.2.3 scalar conversion valid with NumPy 2.x."""
+
+    shape = getattr(value, "shape", None)
+    size = getattr(value, "size", None)
+    if not args and shape not in (None, ()) and size == 1:
+        item = getattr(value, "item", None)
+        if callable(item):
+            value = item()
+    return builtins.int(value, *args)
+
+
+def _install_offline_engine_size_one_int_compat(
+    offline_engine_type: type[Any],
+) -> bool:
+    """Patch only OfflineEngine's NumPy-2-incompatible int conversion."""
+
+    marker = "_RLCSD_SIZE_ONE_INT_COMPAT"
+    if getattr(offline_engine_type, marker, False):
+        return False
+    original = getattr(
+        offline_engine_type,
+        "background_detokenization",
+        None,
+    )
+    if not isinstance(original, types.FunctionType):
+        return False
+
+    patched_globals = dict(original.__globals__)
+    patched_globals["int"] = _size_one_array_compatible_int
+    patched = types.FunctionType(
+        original.__code__,
+        patched_globals,
+        original.__name__,
+        original.__defaults__,
+        original.__closure__,
+    )
+    patched.__kwdefaults__ = original.__kwdefaults__
+    patched.__annotations__ = dict(original.__annotations__)
+    patched.__dict__.update(original.__dict__)
+    patched.__doc__ = original.__doc__
+    patched.__module__ = original.__module__
+    patched.__qualname__ = original.__qualname__
+
+    offline_engine_type.background_detokenization = patched
+    setattr(offline_engine_type, marker, True)
+    return True
 
 
 def generate_rollout_samples(

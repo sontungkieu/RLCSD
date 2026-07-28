@@ -25,6 +25,7 @@ from benchmarks.maxtext_tpu.rlcsd_data import (
 from benchmarks.maxtext_tpu.rlcsd_rollout import (
     RolloutSample,
     _install_decoupled_prefill_compat,
+    _install_offline_engine_size_one_int_compat,
     _register_result_tokens_pytree,
     create_offline_engine,
     update_offline_engine_params,
@@ -298,6 +299,34 @@ def test_decoupled_result_tokens_are_valid_jax_jit_outputs():
     assert result.valid_idx == (1, 2)
     assert result.length_idx == (2, 3)
     assert result.samples_per_slot == 1
+
+
+def test_offline_engine_detokenization_accepts_size_one_token_arrays():
+    class FutureNumpyArray:
+        shape = (1,)
+        size = 1
+
+        @staticmethod
+        def item():
+            return 17
+
+        @staticmethod
+        def __int__():
+            raise TypeError(
+                "only 0-dimensional arrays can be converted to Python scalars"
+            )
+
+    class OfflineEngine:
+        @staticmethod
+        def background_detokenization():
+            return int(FutureNumpyArray())
+
+    with pytest.raises(TypeError, match="0-dimensional arrays"):
+        OfflineEngine.background_detokenization()
+
+    assert _install_offline_engine_size_one_int_compat(OfflineEngine) is True
+    assert _install_offline_engine_size_one_int_compat(OfflineEngine) is False
+    assert OfflineEngine.background_detokenization() == 17
 
 
 def test_rollout_gate_requires_exactly_64_groups_of_8():
