@@ -36,6 +36,7 @@ from benchmarks.maxtext_tpu.rlcsd_train import (
     advance_training_progress,
     original_steps_per_epoch,
     original_total_rollout_steps,
+    resolve_attached_resume_training_root,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -117,6 +118,61 @@ def test_original_case_is_not_the_seq512_canary_matrix():
     assert canary.sequence_length == 512
     assert canary.measurement_profile == "core_step_canary"
     assert canary.as_dict()["is_original_rlcsd_config"] is False
+
+
+def _write_resume_markers(training_root: Path) -> None:
+    (training_root / "checkpoints").mkdir(parents=True)
+    (training_root / "training_session.json").write_text("{}\n", encoding="utf-8")
+    (training_root / "checkpoints" / "latest_progress.json").write_text(
+        "{}\n",
+        encoding="utf-8",
+    )
+
+
+def test_resume_root_resolves_kaggle_notebook_output_namespace(tmp_path):
+    input_root = tmp_path / "input"
+    expected = (
+        input_root
+        / "notebooks"
+        / "anhhaphan"
+        / "rlcsd-qwen3-1p7b-original-contract-tp8-train-v31"
+        / "output"
+        / "rlcsd_original_training"
+    )
+    _write_resume_markers(expected)
+    _write_resume_markers(
+        input_root
+        / "notebooks"
+        / "other-owner"
+        / "rlcsd-qwen3-1p7b-original-contract-tp8-train-v31"
+        / "output"
+        / "rlcsd_original_training"
+    )
+
+    resolved = resolve_attached_resume_training_root(
+        input_root,
+        "anhhaphan/rlcsd-qwen3-1p7b-original-contract-tp8-train-v31",
+    )
+
+    assert resolved == expected
+
+
+def test_resume_root_fails_closed_on_ambiguous_exact_source(tmp_path):
+    input_root = tmp_path / "input"
+    source_root = (
+        input_root
+        / "notebooks"
+        / "anhhaphan"
+        / "rlcsd-qwen3-1p7b-original-contract-tp8-train-v31"
+    )
+    _write_resume_markers(source_root / "rlcsd_original_training")
+    _write_resume_markers(source_root / "output" / "rlcsd_original_training")
+
+    with pytest.raises(FileNotFoundError, match="found 2"):
+        resolve_attached_resume_training_root(
+            input_root,
+            "anhhaphan/rlcsd-qwen3-1p7b-original-contract-tp8-train-v31",
+        )
 
 
 def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):

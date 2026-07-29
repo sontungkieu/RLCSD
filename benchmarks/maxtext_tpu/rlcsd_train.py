@@ -72,6 +72,79 @@ EVAL_SOURCES: dict[str, tuple[str, str, tuple[str, ...]]] = {
 }
 
 
+def resolve_attached_resume_training_root(
+    input_root: Path,
+    source_kernel: str,
+) -> Path:
+    """Resolve one exact attached Kaggle kernel-output training root.
+
+    Kaggle dataset inputs use ``/kaggle/input/<slug>``, while attached
+    notebook outputs may be nested below ``/kaggle/input/notebooks``.  Accept
+    both layouts, but only select a nested candidate whose path contains the
+    exact source owner and slug and whose resumable state files are present.
+    """
+
+    try:
+        source_owner, source_slug = source_kernel.split("/", 1)
+    except ValueError as exc:
+        raise ValueError("source_kernel must be formatted as owner/slug") from exc
+    if not source_owner or not source_slug or "/" in source_slug:
+        raise ValueError("source_kernel must be formatted as owner/slug")
+
+    direct_roots = (
+        input_root / source_slug / "rlcsd_original_training",
+        input_root
+        / "notebooks"
+        / source_owner
+        / source_slug
+        / "rlcsd_original_training",
+        input_root
+        / "notebooks"
+        / source_owner
+        / source_slug
+        / "output"
+        / "rlcsd_original_training",
+    )
+    candidates = list(direct_roots)
+    notebooks_root = input_root / "notebooks"
+    if notebooks_root.is_dir():
+        for session_path in notebooks_root.rglob("training_session.json"):
+            candidate = session_path.parent
+            if (
+                candidate.name == "rlcsd_original_training"
+                and source_owner in candidate.parts
+                and source_slug in candidate.parts
+            ):
+                candidates.append(candidate)
+
+    valid_roots: list[Path] = []
+    seen: set[Path] = set()
+    for candidate in candidates:
+        normalized = candidate.resolve(strict=False)
+        if normalized in seen:
+            continue
+        seen.add(normalized)
+        if (
+            (candidate / "training_session.json").is_file()
+            and (candidate / "checkpoints" / "latest_progress.json").is_file()
+        ):
+            valid_roots.append(candidate)
+
+    if len(valid_roots) != 1:
+        available_inputs = (
+            sorted(path.name for path in input_root.iterdir())
+            if input_root.is_dir()
+            else []
+        )
+        raise FileNotFoundError(
+            "Expected exactly one attached resumable RLCSD state for "
+            f"{source_kernel}, found {len(valid_roots)}; "
+            f"candidates={[str(path) for path in valid_roots]} "
+            f"available_inputs={available_inputs}"
+        )
+    return valid_roots[0]
+
+
 def _contract_digest(contract: OriginalRlcsdContract) -> str:
     encoded = json.dumps(
         contract.as_dict(),
