@@ -33,6 +33,7 @@ from benchmarks.maxtext_tpu.rlcsd_rollout import (
 )
 from benchmarks.maxtext_tpu.rlcsd_train import (
     TrainingProgress,
+    _restored_state_pure_dict,
     advance_training_progress,
     original_steps_per_epoch,
     original_total_rollout_steps,
@@ -51,6 +52,27 @@ class FakeTokenizer:
         text = "\n".join(item["content"] for item in messages)
         width = 5 + (len(text) % 7)
         return list(range(10, 10 + width))
+
+
+def test_restored_training_state_accepts_orbax_pure_dict():
+    restored = {"params": {"layer": object()}, "opt_state": {"step": 0}}
+
+    assert _restored_state_pure_dict(restored) is restored
+
+
+def test_restored_training_state_converts_nnx_state():
+    pure = {"params": {"layer": object()}}
+
+    class FakeNnxState:
+        def to_pure_dict(self):
+            return pure
+
+    assert _restored_state_pure_dict(FakeNnxState()) is pure
+
+
+def test_restored_training_state_rejects_unknown_container():
+    with pytest.raises(TypeError, match="restored training state"):
+        _restored_state_pure_dict(object())
 
 
 def _sample(

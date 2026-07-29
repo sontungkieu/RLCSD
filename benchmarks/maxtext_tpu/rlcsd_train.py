@@ -508,6 +508,19 @@ def _save_training_checkpoint(
     }
 
 
+def _restored_state_pure_dict(restored_state: Any) -> dict[str, Any]:
+    if isinstance(restored_state, dict):
+        return restored_state
+    to_pure_dict = getattr(restored_state, "to_pure_dict", None)
+    if callable(to_pure_dict):
+        pure_state = to_pure_dict()
+        if isinstance(pure_state, dict):
+            return pure_state
+    raise TypeError(
+        "restored training state must be a dict or expose to_pure_dict()"
+    )
+
+
 def _restore_training_checkpoint(
     *,
     checkpoint_dir: Path,
@@ -538,7 +551,10 @@ def _restore_training_checkpoint(
     if not restored:
         raise RuntimeError("resume directory has no restorable checkpoint")
     restored_state = restored["items"]
-    nnx.replace_by_pure_dict(target, restored_state.to_pure_dict())
+    nnx.replace_by_pure_dict(
+        target,
+        _restored_state_pure_dict(restored_state),
+    )
     nnx.update(train_state, target)
     _, params, _ = nnx.split(model, nnx.Param, ...)
     teacher_path = checkpoint_dir / str(progress.rollout_step) / "teacher_items"
