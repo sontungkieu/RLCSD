@@ -37,6 +37,7 @@ from benchmarks.maxtext_tpu.rlcsd_train import (
     original_steps_per_epoch,
     original_total_rollout_steps,
     resolve_attached_resume_training_root,
+    stage_writable_resume_checkpoint,
 )
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
@@ -173,6 +174,46 @@ def test_resume_root_fails_closed_on_ambiguous_exact_source(tmp_path):
             input_root,
             "anhhaphan/rlcsd-qwen3-1p7b-original-contract-tp8-train-v31",
         )
+
+
+def test_attached_resume_checkpoint_is_staged_to_distinct_writable_root(tmp_path):
+    source = tmp_path / "input" / "checkpoints"
+    (source / "7" / "items").mkdir(parents=True)
+    (source / "7" / "teacher_items").mkdir()
+    (source / "7" / "items" / "state").write_text("actor\n", encoding="utf-8")
+    (source / "7" / "teacher_items" / "state").write_text(
+        "teacher\n",
+        encoding="utf-8",
+    )
+    (source / "latest_progress.json").write_text(
+        '{"rollout_step": 7}\n',
+        encoding="utf-8",
+    )
+    output = tmp_path / "working" / "checkpoints"
+
+    staged = stage_writable_resume_checkpoint(source, output)
+
+    assert staged == output.resolve()
+    assert (staged / "7" / "items" / "state").read_text() == "actor\n"
+    assert (staged / "7" / "teacher_items" / "state").read_text() == "teacher\n"
+    assert (staged / "latest_progress.json").is_file()
+    assert not (staged / ".rlcsd_write_probe").exists()
+    assert (source / "7" / "items" / "state").read_text() == "actor\n"
+
+
+def test_writable_resume_staging_fails_closed_on_existing_destination(tmp_path):
+    source = tmp_path / "input" / "checkpoints"
+    (source / "0" / "items").mkdir(parents=True)
+    (source / "0" / "teacher_items").mkdir()
+    (source / "latest_progress.json").write_text(
+        '{"rollout_step": 0}\n',
+        encoding="utf-8",
+    )
+    output = tmp_path / "working" / "checkpoints"
+    output.mkdir(parents=True)
+
+    with pytest.raises(FileExistsError, match="destination already exists"):
+        stage_writable_resume_checkpoint(source, output)
 
 
 def test_offline_engine_decouples_optional_jetstream_before_import(monkeypatch):

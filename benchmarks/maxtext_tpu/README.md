@@ -159,6 +159,12 @@ python -m benchmarks.maxtext_tpu.rlcsd_train \
   --output-dir outputs/maxtext_tpu/original_rlcsd/session_0002
 ```
 
+When the previous artifact is attached under Kaggle's read-only
+`/kaggle/input` mount, first use `stage_writable_resume_checkpoint` to copy the
+validated model/optimizer/teacher state into the current session's
+`<output-dir>/checkpoints`. Orbax requires a writable manager root even while
+restoring; the attached source remains unchanged.
+
 `audit.py` accepts an incomplete output only as
 `phase=rlcsd_training_shard`. It accepts `phase=rlcsd_end_to_end` only after
 all 28,110 drop-last rollout steps, 30 epochs, pre-train and every scheduled

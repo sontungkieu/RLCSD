@@ -13,6 +13,7 @@ import argparse
 import dataclasses
 import hashlib
 import json
+import shutil
 import time
 from collections.abc import Mapping, Sequence
 from pathlib import Path
@@ -143,6 +144,55 @@ def resolve_attached_resume_training_root(
             f"available_inputs={available_inputs}"
         )
     return valid_roots[0]
+
+
+def stage_writable_resume_checkpoint(
+    source_checkpoint_dir: Path,
+    output_checkpoint_dir: Path,
+) -> Path:
+    """Copy one validated attached checkpoint into a writable output root.
+
+    Kaggle attaches notebook outputs below ``/kaggle/input`` as read-only.
+    MaxText's Orbax manager probes its checkpoint directory for write access
+    even when it is only restoring, so a directly attached checkpoint cannot
+    be used as the manager root. Preserve the attached source and stage the
+    exact resumable state into the current notebook's output directory.
+    """
+
+    source = source_checkpoint_dir.resolve(strict=True)
+    output = output_checkpoint_dir.resolve(strict=False)
+    if source == output:
+        raise ValueError("resume checkpoint source and writable output must differ")
+    if output.exists():
+        raise FileExistsError(
+            f"writable resume checkpoint destination already exists: {output}"
+        )
+
+    progress_path = source / "latest_progress.json"
+    if not progress_path.is_file():
+        raise FileNotFoundError(
+            f"resume checkpoint is missing latest_progress.json: {source}"
+        )
+    progress = json.loads(progress_path.read_text(encoding="utf-8"))
+    rollout_step = int(progress["rollout_step"])
+    required = (
+        source / str(rollout_step) / "items",
+        source / str(rollout_step) / "teacher_items",
+    )
+    missing = [str(path) for path in required if not path.is_dir()]
+    if missing:
+        raise FileNotFoundError(
+            f"resume checkpoint is missing required state directories: {missing}"
+        )
+
+    output.parent.mkdir(parents=True, exist_ok=True)
+    shutil.copytree(source, output)
+    write_probe = output / ".rlcsd_write_probe"
+    try:
+        write_probe.write_text("writable\n", encoding="utf-8")
+    finally:
+        write_probe.unlink(missing_ok=True)
+    return output
 
 
 def _contract_digest(contract: OriginalRlcsdContract) -> str:
