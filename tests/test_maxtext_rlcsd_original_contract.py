@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 import os
 import sys
 import types
@@ -34,6 +35,7 @@ from benchmarks.maxtext_tpu.rlcsd_rollout import (
 from benchmarks.maxtext_tpu.rlcsd_train import (
     TrainingProgress,
     _restored_state_pure_dict,
+    _save_training_checkpoint,
     advance_training_progress,
     original_steps_per_epoch,
     original_total_rollout_steps,
@@ -73,6 +75,84 @@ def test_restored_training_state_converts_nnx_state():
 def test_restored_training_state_rejects_unknown_container():
     with pytest.raises(TypeError, match="restored training state"):
         _restored_state_pure_dict(object())
+
+
+def test_checkpoint_save_reuses_existing_state_at_same_training_coordinate(
+    tmp_path,
+):
+    contract = load_original_contract(REPO_ROOT)
+    progress = TrainingProgress.initial(contract)
+    checkpoint_dir = tmp_path / "checkpoints"
+    step_dir = checkpoint_dir / "0"
+    (step_dir / "items").mkdir(parents=True)
+    (step_dir / "teacher_items").mkdir()
+    (step_dir / "training_progress.json").write_text(
+        json.dumps(progress.as_dict()) + "\n",
+        encoding="utf-8",
+    )
+    progress.pretrain_validation_record_index = 12
+
+    class UnexpectedCheckpointManager:
+        @staticmethod
+        def wait_until_finished():
+            raise AssertionError("existing checkpoint payload must be reused")
+
+    actor_state = types.SimpleNamespace(
+        optimizer=object(),
+        teacher_params=object(),
+        global_update_step=0,
+    )
+    saved = _save_training_checkpoint(
+        checkpoint_manager=UnexpectedCheckpointManager(),
+        checkpoint_dir=checkpoint_dir,
+        model=object(),
+        actor_state=actor_state,
+        progress=progress,
+        reason="session_deadline_after_validation_prompt",
+    )
+
+    assert saved["checkpoint_manager_saved"] is False
+    assert saved["checkpoint_state_reused"] is True
+    assert json.loads(
+        (checkpoint_dir / "latest_progress.json").read_text(encoding="utf-8")
+    )["pretrain_validation_record_index"] == 12
+    assert json.loads(
+        (step_dir / "training_progress.json").read_text(encoding="utf-8")
+    )["pretrain_validation_record_index"] == 12
+
+
+def test_checkpoint_save_rejects_existing_state_at_different_optimizer_step(
+    tmp_path,
+):
+    contract = load_original_contract(REPO_ROOT)
+    progress = TrainingProgress.initial(contract)
+    checkpoint_dir = tmp_path / "checkpoints"
+    step_dir = checkpoint_dir / "0"
+    (step_dir / "items").mkdir(parents=True)
+    (step_dir / "teacher_items").mkdir()
+    old_progress = progress.as_dict()
+    old_progress["optimizer_step"] = 1
+    (step_dir / "training_progress.json").write_text(
+        json.dumps(old_progress) + "\n",
+        encoding="utf-8",
+    )
+    actor_state = types.SimpleNamespace(
+        optimizer=object(),
+        teacher_params=object(),
+        global_update_step=0,
+    )
+
+    with pytest.raises(RuntimeError, match="coordinates do not match"):
+        _save_training_checkpoint(
+            checkpoint_manager=object(),
+            checkpoint_dir=checkpoint_dir,
+            model=object(),
+            actor_state=actor_state,
+            progress=progress,
+            reason="session_deadline",
+        )
+
+    assert not (checkpoint_dir / "latest_progress.json").exists()
 
 
 def _sample(

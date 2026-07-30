@@ -474,13 +474,59 @@ def _save_training_checkpoint(
     progress: TrainingProgress,
     reason: str,
 ) -> dict[str, Any]:
+    step = progress.rollout_step
+    step_dir = checkpoint_dir / str(step)
+    progress_path = step_dir / "training_progress.json"
+    latest_progress_path = checkpoint_dir / "latest_progress.json"
+    if step_dir.exists():
+        required_state = (step_dir / "items", step_dir / "teacher_items")
+        missing_state = [str(path) for path in required_state if not path.is_dir()]
+        if missing_state:
+            raise RuntimeError(
+                "existing checkpoint step is incomplete; refusing to reuse it: "
+                f"{missing_state}"
+            )
+        existing_progress_path = (
+            progress_path if progress_path.is_file() else latest_progress_path
+        )
+        if not existing_progress_path.is_file():
+            raise RuntimeError(
+                "existing checkpoint step has no progress marker; "
+                f"step={step} checkpoint_dir={checkpoint_dir}"
+            )
+        existing_progress = json.loads(
+            existing_progress_path.read_text(encoding="utf-8")
+        )
+        existing_coordinates = (
+            int(existing_progress["rollout_step"]),
+            int(existing_progress["optimizer_step"]),
+        )
+        current_coordinates = (step, int(progress.optimizer_step))
+        if existing_coordinates != current_coordinates:
+            raise RuntimeError(
+                "existing checkpoint state coordinates do not match current "
+                "training progress; refusing to overwrite: "
+                f"existing={existing_coordinates} current={current_coordinates}"
+            )
+        write_json(progress_path, progress.as_dict())
+        write_json(latest_progress_path, progress.as_dict())
+        return {
+            "step": step,
+            "optimizer_step": actor_state.global_update_step,
+            "reason": reason,
+            "checkpoint_manager_saved": False,
+            "checkpoint_state_reused": True,
+            "items": str((step_dir / "items").resolve()),
+            "teacher_items": str((step_dir / "teacher_items").resolve()),
+            "progress": str(progress_path.resolve()),
+        }
+
     from flax import nnx
     from maxtext.common import checkpointing, train_state_nnx
 
     state = train_state_nnx.TrainStateNNX(model, actor_state.optimizer)
     nnx_state = nnx.state(state)
     linen_state = train_state_nnx.to_linen_checkpoint_dict(nnx_state.to_pure_dict())
-    step = progress.rollout_step
     saved = checkpointing.save_checkpoint(
         checkpoint_manager,
         step,
@@ -488,20 +534,19 @@ def _save_training_checkpoint(
         force=True,
     )
     checkpoint_manager.wait_until_finished()
-    step_dir = checkpoint_dir / str(step)
     teacher_dir = step_dir / "teacher_items"
     checkpointing.save_params_to_path(
         str(teacher_dir),
         actor_state.teacher_params,
     )
-    progress_path = step_dir / "training_progress.json"
     write_json(progress_path, progress.as_dict())
-    write_json(checkpoint_dir / "latest_progress.json", progress.as_dict())
+    write_json(latest_progress_path, progress.as_dict())
     return {
         "step": step,
         "optimizer_step": actor_state.global_update_step,
         "reason": reason,
         "checkpoint_manager_saved": bool(saved),
+        "checkpoint_state_reused": False,
         "items": str((step_dir / "items").resolve()),
         "teacher_items": str(teacher_dir.resolve()),
         "progress": str(progress_path.resolve()),
