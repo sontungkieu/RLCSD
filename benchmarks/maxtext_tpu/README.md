@@ -165,6 +165,15 @@ validated model/optimizer/teacher state into the current session's
 `<output-dir>/checkpoints`. Orbax requires a writable manager root even while
 restoring; the attached source remains unchanged.
 
+For a KJO Job Spec schema-v2 cross-account resume, use
+`benchmarks.maxtext_tpu.rlcsd_job` only for the project-owned boundary steps:
+`verify-environment`, `prepare-resume`, and `collect`. The Job Spec should keep
+checkpoint conversion, parity, `rlcsd_train`, and `audit` as separate readable
+steps. `prepare-resume` accepts the exact destination-owned relay dataset
+source, records the locally verified relay tree hash without claiming to
+rehash the 6.3 GB input at runtime, validates the original contract/progress
+markers, and copies the checkpoint into writable Kaggle storage.
+
 `audit.py` accepts an incomplete output only as
 `phase=rlcsd_training_shard`. It accepts `phase=rlcsd_end_to_end` only after
 all 28,110 drop-last rollout steps, 30 epochs, pre-train and every scheduled

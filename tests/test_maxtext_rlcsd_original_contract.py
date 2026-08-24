@@ -32,6 +32,7 @@ from benchmarks.maxtext_tpu.rlcsd_rollout import (
     update_offline_engine_params,
     validate_rollout_samples,
 )
+from benchmarks.maxtext_tpu.rlcsd_job import collect_results, prepare_resume
 from benchmarks.maxtext_tpu.rlcsd_train import (
     TrainingProgress,
     _restored_state_pure_dict,
@@ -276,6 +277,198 @@ def test_resume_root_fails_closed_on_ambiguous_exact_source(tmp_path):
             input_root,
             "anhhaphan/rlcsd-qwen3-1p7b-original-contract-tp8-train-v31",
         )
+
+
+def test_resume_root_resolves_direct_relay_dataset_layout(tmp_path):
+    input_root = tmp_path / "input"
+    expected = (
+        input_root
+        / "rlcsd-v36-resume-relay-v37-1-hoanganpham123"
+        / "rlcsd_original_training"
+    )
+    _write_resume_markers(expected)
+
+    resolved = resolve_attached_resume_training_root(
+        input_root,
+        "hoanganpham123/rlcsd-v36-resume-relay-v37-1-hoanganpham123",
+    )
+
+    assert resolved == expected
+
+
+def test_job_resume_gate_preserves_exact_progress_and_stages_state(tmp_path):
+    input_root = tmp_path / "input"
+    training_root = (
+        input_root
+        / "rlcsd-v36-resume-relay-v37-1-hoanganpham123"
+        / "rlcsd_original_training"
+    )
+    checkpoint_dir = training_root / "checkpoints"
+    (checkpoint_dir / "0" / "items").mkdir(parents=True)
+    (checkpoint_dir / "0" / "teacher_items").mkdir()
+    source_run_id = "rlcsd_qwen3_1p7b_original_contract_tp8_train_v36"
+    run_summary = training_root.parent / "kaggle_job_ops" / source_run_id
+    run_summary.mkdir(parents=True)
+    (run_summary / "run_summary.json").write_text(
+        json.dumps({"run_id": source_run_id}) + "\n",
+        encoding="utf-8",
+    )
+    progress = {
+        "schema_version": 1,
+        "contract_sha256": "a" * 64,
+        "phase": "pretrain_validation",
+        "rollout_step": 0,
+        "optimizer_step": 0,
+    }
+    (checkpoint_dir / "latest_progress.json").write_text(
+        json.dumps(progress) + "\n",
+        encoding="utf-8",
+    )
+    (training_root / "training_session.json").write_text(
+        json.dumps(
+            {
+                "case": {"case_id": "qwen3_1_7b-original-rlcsd-tp8"},
+                "is_resumable_original_contract_shard": True,
+                "is_rlcsd_end_to_end": False,
+                "progress": progress,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    summary_path = tmp_path / "metrics" / "resume_source_summary.json"
+    output_checkpoint_dir = tmp_path / "working" / "checkpoints"
+
+    summary = prepare_resume(
+        input_root=input_root,
+        relay_dataset_source=(
+            "hoanganpham123/rlcsd-v36-resume-relay-v37-1-hoanganpham123"
+        ),
+        source_kernel_id=(
+            "anhhaphan/rlcsd-qwen3-1p7b-original-contract-tp8-train-v36"
+        ),
+        source_run_id=source_run_id,
+        declared_relay_tree_sha256="b" * 64,
+        expected_contract_sha256="a" * 64,
+        output_checkpoint_dir=output_checkpoint_dir,
+        summary_output=summary_path,
+    )
+
+    assert summary["ok"] is True
+    assert summary["progress"] == progress
+    assert (output_checkpoint_dir / "0" / "items").is_dir()
+    assert summary_path.is_file()
+
+
+def test_job_resume_gate_rejects_mismatched_relay_run_identity(tmp_path):
+    input_root = tmp_path / "input"
+    training_root = (
+        input_root
+        / "rlcsd-v36-resume-relay-v37-1-hoanganpham123"
+        / "rlcsd_original_training"
+    )
+    checkpoint_dir = training_root / "checkpoints"
+    (checkpoint_dir / "0" / "items").mkdir(parents=True)
+    (checkpoint_dir / "0" / "teacher_items").mkdir()
+    progress = {
+        "contract_sha256": "a" * 64,
+        "rollout_step": 0,
+    }
+    (checkpoint_dir / "latest_progress.json").write_text(
+        json.dumps(progress) + "\n",
+        encoding="utf-8",
+    )
+    (training_root / "training_session.json").write_text(
+        json.dumps(
+            {
+                "case": {"case_id": "qwen3_1_7b-original-rlcsd-tp8"},
+                "is_resumable_original_contract_shard": True,
+                "is_rlcsd_end_to_end": False,
+                "progress": progress,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    source_run_id = "rlcsd_qwen3_1p7b_original_contract_tp8_train_v36"
+    run_summary = training_root.parent / "kaggle_job_ops" / source_run_id
+    run_summary.mkdir(parents=True)
+    (run_summary / "run_summary.json").write_text(
+        '{"run_id": "different_run"}\n',
+        encoding="utf-8",
+    )
+
+    with pytest.raises(RuntimeError, match="source_run_id_exact"):
+        prepare_resume(
+            input_root=input_root,
+            relay_dataset_source=(
+                "hoanganpham123/rlcsd-v36-resume-relay-v37-1-hoanganpham123"
+            ),
+            source_kernel_id=(
+                "anhhaphan/rlcsd-qwen3-1p7b-original-contract-tp8-train-v36"
+            ),
+            source_run_id=source_run_id,
+            declared_relay_tree_sha256="b" * 64,
+            expected_contract_sha256="a" * 64,
+            output_checkpoint_dir=tmp_path / "working" / "checkpoints",
+            summary_output=tmp_path / "metrics" / "resume_source_summary.json",
+        )
+
+
+def test_job_collect_reports_measured_update_throughput(tmp_path, monkeypatch):
+    monkeypatch.delenv("KJO_RUN_ID", raising=False)
+    metrics_root = tmp_path / "metrics"
+    training_root = tmp_path / "training"
+    metrics_root.mkdir()
+    training_root.mkdir()
+    (metrics_root / "audit.json").write_text(
+        '{"all_valid": true}\n',
+        encoding="utf-8",
+    )
+    (metrics_root / "resume_source_summary.json").write_text(
+        '{"ok": true}\n',
+        encoding="utf-8",
+    )
+    (metrics_root / "environment_summary.json").write_text(
+        '{"ok": true}\n',
+        encoding="utf-8",
+    )
+    (training_root / "training_session.json").write_text(
+        json.dumps(
+            {
+                "case": {"case_id": "qwen3_1_7b-original-rlcsd-tp8"},
+                "weights": "converted_pretrained_checkpoint",
+                "measurement_boundary": {"full_30_epoch_training": False},
+                "progress": {"rollout_step": 1, "optimizer_step": 32},
+                "training": {
+                    "session_update_reports": [
+                        {
+                            "timed_updates": [
+                                {
+                                    "response_token_count": 256,
+                                    "policy_execution_s": 1.5,
+                                    "optimizer_update_s": 0.5,
+                                }
+                            ]
+                        }
+                    ]
+                },
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    output = metrics_root / "final_summary.json"
+
+    summary = collect_results(
+        metrics_root=metrics_root,
+        training_root=training_root,
+        output=output,
+    )
+
+    assert summary["benchmark_row"]["prefill_tok_s"] == 128.0
+    assert summary["benchmark_row"]["timed_iteration_count"] == 1
+    assert json.loads(output.read_text(encoding="utf-8"))["ok"] is True
 
 
 def test_attached_resume_checkpoint_is_staged_to_distinct_writable_root(tmp_path):
